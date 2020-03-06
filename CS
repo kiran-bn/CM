@@ -1,0 +1,103 @@
+Public Class CountrySelector
+    Inherits System.Windows.Forms.Form
+    Public myForm As NZ_Case_Management
+    Private Sub CountrySelector_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        On Error GoTo ErrorHandler
+Done:
+        If GlobalVariables.BOTHCOUNTRIES = False Then
+            Me.Hide()
+        End If
+        Exit Sub
+
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "CountrySelector.UserForm_Initialize", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub selectCountryBtn_Click(sender As Object, e As EventArgs) Handles selectCountryBtn.Click
+        On Error GoTo ErrorHandler
+        If auOptionButton.Checked = True Then
+            GlobalVariables.HISTINDTABLE = "Hist_AU_Ind_ASW"
+            GlobalVariables.HISTENTTABLE = "Hist_AU_ENTITY_ASW"
+            GlobalVariables.HIST_CASE_ID = "S_id_from_au_post"
+            GlobalVariables.COUNTRY = "Australia"
+            GlobalVariables.LINKEDCASESTABLE = "Au_Linked_Cases"
+            GlobalVariables.ESCALATIONSTABLE = "AU_CC_Escalations"
+            GlobalVariables.CUSTOMERTABLE = "AU_CC_Customer"
+            GlobalVariables.CASESTATUSTABLE = "AU_Case_Reasons"
+            GlobalVariables.CONVERSATIONTABLE = "AU_CC_Conversation"
+            GlobalVariables.DBPATH = GlobalVariables.DBPATHAU
+            GlobalVariables.COUNTRY = "Australia"
+            Me.Dispose()
+
+            If myForm Is Nothing Then
+                myForm = New NZ_Case_Management
+                myForm.myCountry = Me
+            End If
+            NZ_Case_Management.ShowDialog()
+        ElseIf nzOptionButton.Checked = True Then
+            GlobalVariables.HISTINDTABLE = "Hist_NZ_Ind_ASW"
+            GlobalVariables.HISTENTTABLE = "Hist_NZ_ENTITY_ASW"
+            GlobalVariables.HIST_CASE_ID = "S_id_from_nz_post"
+            GlobalVariables.COUNTRY = "New Zealand"
+            GlobalVariables.LINKEDCASESTABLE = "NZ_Linked_Cases"
+            GlobalVariables.ESCALATIONSTABLE = "NZ_CC_Escalations"
+            GlobalVariables.CUSTOMERTABLE = "NZ_CC_Customer"
+            GlobalVariables.CONVERSATIONTABLE = "NZ_CC_Conversation"
+            GlobalVariables.CASESTATUSTABLE = "NZ_Case_Reasons"
+            GlobalVariables.COUNTRY = "New Zealand"
+            GlobalVariables.DBPATH = GlobalVariables.DBPATHNZ
+            Me.Dispose()
+            If myForm Is Nothing Then
+                myForm = New NZ_Case_Management
+                myForm.myCountry = Me
+            End If
+            NZ_Case_Management.ShowDialog()
+        Else
+            MsgBox("Please select a country", vbInformation)
+        End If
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "CountrySelector.selectCountryBtn_Click", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub cancelbtn_Click(sender As Object, e As EventArgs) Handles cancelbtn.Click
+        On Error GoTo ErrorHandler
+        Me.Close()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "CountrySelector.cancelbtn_Click", Erl)
+        Resume Done
+    End Sub
+
+End Class
+Public Class myStartupClass
+    Public Shared Sub Main()
+        On Error GoTo ErrorHandler
+        Application.EnableVisualStyles()
+        If readConfigfile() = False Then
+            'sql = "Select count(*) From CustomerTable"
+
+            If authenticateusers() = False Then
+                MsgBox("ERROR: " & GlobalVariables.USERLANID & " does not have permission to use this system. Access Denied.")
+                Application.Exit()
+                'Else
+                ' MsgBox("User " & GlobalVariables.USERFULLNAME & " Authenticated !")
+            Else
+                If GlobalVariables.BOTHCOUNTRIES = False Then
+                    NZ_Case_Management.ShowDialog()
+                Else
+                    CountrySelector.ShowDialog()
+                End If
+            End If
+        End If
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "myStartupClass.Main", Erl)
+        Resume Done
+    End Sub
+End Class
