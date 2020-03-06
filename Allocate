@@ -1,0 +1,79 @@
+Imports System.IO
+Imports System.Data.OleDb
+Public Class Allocated_Cases
+    Private Sub showCaseDetailsBtn_Click(sender As Object, e As EventArgs) Handles showCaseDetailsBtn.Click
+        Dim icnt As Integer
+        Try
+            For icnt = 0 To (allocatedCasesListBox.Items.Count - 1)
+                If allocatedCasesListBox.FocusedItem.Index = icnt Then
+                    NZ_Case_Management.caseIDOptionButton.Checked = True
+                    NZ_Case_Management.caseIDOptionButton_CheckedChanged()
+                    NZ_Case_Management.caseidTextBox.Text = allocatedCasesListBox.Items(icnt).SubItems(1).Text
+                    NZ_Case_Management.searchCaseDetailBtn_Click()
+                End If
+            Next
+            Me.Close()
+        Catch ex As Exception
+            MsgBox("Please select a case")
+        End Try
+Done:
+        Exit Sub
+
+    End Sub
+
+    Public Sub Allocated_Cases_Load() Handles MyBase.Load
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        Dim count As Integer
+        Dim ssqlqry As String
+        allocatedCasesListBox.Clear()
+        allocatedCasesListBox.Columns.Add(text:="Allocated Date", width:=80)
+        allocatedCasesListBox.Columns.Add(text:="Case ID", width:=80)
+        allocatedCasesListBox.Columns.Add(text:="Source", width:=90)
+        allocatedCasesListBox.Columns.Add(text:="Restraint", width:=90)
+        count = 0
+        connectToDB(GlobalVariables.DBPATH)
+        If GlobalVariables.CONN.State = 0 Then
+            MsgBox("Not connected to DB!!!")
+            GoTo Done
+        End If
+        ssqlqry = "Select Assigned_On, Case_ID, Source, restraint from Work_Allocation where Agent_ID = '" & GlobalVariables.USERLANID & "' and Status = 'Pending' order by Assigned_On , Restraint='Yes' "
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        oledbreader = cmd.ExecuteReader
+        If oledbreader.HasRows Then
+            While oledbreader.Read
+                NZ_Case_Management.allocatedCasesBtn.Visible = True
+                count = count + 1
+                Dim lstItems As ListViewItem = allocatedCasesListBox.Items.Add(oledbreader(0))
+                If oledbreader.IsDBNull(1) Then
+                    lstItems.SubItems.Add("")
+                Else
+                    lstItems.SubItems.Add(oledbreader(1))
+                End If
+                If oledbreader.IsDBNull(2) Then
+                    lstItems.SubItems.Add("")
+                Else
+                    lstItems.SubItems.Add(oledbreader(2))
+                End If
+                If oledbreader.IsDBNull(3) Then
+                    lstItems.SubItems.Add("")
+                Else
+                    lstItems.SubItems.Add(oledbreader(3))
+                End If
+
+            End While
+            AllocatedCasesCountLabel.Text = count
+        Else
+            Me.Close()
+            NZ_Case_Management.allocatedCasesBtn.Visible = False
+            If NZ_Case_Management.formLoadFlag = False Then
+                MsgBox("No Cases allocated", vbInformation)
+            End If
+        End If
+            closeRecordSet(cmd, oledbreader)
+Done:
+        disconnectFromDB()
+        Exit Sub
+    End Sub
+
+End Class
