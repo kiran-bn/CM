@@ -1,0 +1,16 @@
+Imports System.IO
+Module Decoder
+    Public Function Base64DecodeString(ByVal s As String) As String
+        If s = "" Then Base64DecodeString = "" : Exit Function
+        Base64DecodeString = Base64Decode(s)
+    End Function
+
+    Public Function Base64Decode(ByVal s As String)
+        'Using w As StreamWriter = New StreamWriter(File.Create(filePath))
+        Dim data As Byte() = System.Convert.FromBase64String(s)
+        'MsgBox(System.Text.ASCIIEncoding.ASCII.GetString(data))
+        Return (System.Text.ASCIIEncoding.ASCII.GetString(data))
+        'End Using
+    End Function
+End Module
+
