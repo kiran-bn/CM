@@ -1,0 +1,94 @@
+Imports System.IO
+Imports System.Data.OleDb
+Public Class Reasons
+    Dim ssqlqry As String
+    Private Sub Reasons_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        On Error GoTo ErrorBlock
+        Dim cmd As OleDbCommand
+        Dim reader As OleDbDataReader
+
+        If NZ_Case_Management.viewBtnFlag = False Then
+            connectToDB(GlobalVariables.DBPATH)
+            ssqlqry = "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'ESCALATION_REASON'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            reader = cmd.ExecuteReader
+            If reader.HasRows Then
+                UnassignedReasonsListbox.Items.Clear
+                While reader.Read
+                    UnassignedReasonsListbox.Items.Add(reader(0))
+                End While
+            End If
+            closeRecordSet(cmd, reader)
+
+            ssqlqry = "Select Reason from " & GlobalVariables.CASESTATUSTABLE & " where Case_ID= '" & NZ_Case_Management.CaseId & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            reader = cmd.ExecuteReader
+            If reader.HasRows Then
+                AssignedReasonsListBox.Items.Clear()
+                While reader.Read
+                    UnassignedReasonsListbox.Items.Remove(reader(0))
+                    AssignedReasonsListBox.Items.Add(reader(0))
+                End While
+            End If
+            closeRecordSet(cmd, reader)
+        End If
+Done:
+        disconnectFromDB()
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "CaseManagament.Reasons_Load", Erl)
+    End Sub
+    Sub ClickAuditSelectValueButton(ByRef Src As Object, ByRef Dest As Object)
+        On Error GoTo ErrorBlock
+        For iCnt = 0 To (Src.items.Count - 1)
+            If Src.SelectedIndex = iCnt Then
+                Dest.items.Add(Src.items(iCnt))
+            End If
+        Next iCnt
+        For iCnt = 0 To (Dest.items.Count - 1)
+            For xCnt = 0 To (Src.items.Count - 1)
+                If Dest.items(iCnt) = Src.items(xCnt) Then
+                    Src.Items.RemoveAt(xCnt)
+                    Exit For
+                End If
+            Next xCnt
+        Next iCnt
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "CaseManagament.ClickAuditSelectValueButton", Erl)
+    End Sub
+
+    Private Sub AddReasonBtn_Click(sender As Object, e As EventArgs) Handles AddReasonBtn.Click
+        On Error GoTo Errorblock
+        ClickAuditSelectValueButton(UnassignedReasonsListbox, AssignedReasonsListBox)
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "CaseManagament.AddReasonBtn_Click", Erl)
+    End Sub
+
+    Private Sub RemoveReasonBtn_Click(sender As Object, e As EventArgs) Handles RemoveReasonBtn.Click
+        On Error GoTo Errorblock
+        ClickAuditSelectValueButton(AssignedReasonsListBox, UnassignedReasonsListbox)
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "CaseManagament.RemoveReasonBtn_Click", Erl)
+    End Sub
+
+    Private Sub ReasonsCancelBtn_Click(sender As Object, e As EventArgs) Handles ReasonsCancelBtn.Click
+        On Error GoTo ErrorBlock
+        NZ_Case_Management.reasonComboBox.Text = AssignedReasonsListBox.Items.Count
+        Me.Close()
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "CaseManagament.ReasonsCancelBtn_Click", Erl)
+    End Sub
+
+    Private Sub ReasonsOkBtn_Click(sender As Object, e As EventArgs) Handles ReasonsOkBtn.Click
+        NZ_Case_Management.reasonComboBox.Text = AssignedReasonsListBox.Items.Count
+        Me.Close()
+    End Sub
+End Class
