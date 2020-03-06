@@ -1,0 +1,337 @@
+Imports System.Data.OleDb
+Module Utilities
+    Public Sub connectToDB(path As String)
+        On Error GoTo ErrorBlock
+        Dim sconnect As String
+
+        If GlobalVariables.CONN IsNot Nothing Then
+            If GlobalVariables.CONN.State = ConnectionState.Open Then
+                GlobalVariables.CONN.Close()
+            End If
+        End If
+
+        GlobalVariables.CONN = Nothing
+
+        GlobalVariables.CONN = New OleDbConnection
+        sconnect = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & path
+        GlobalVariables.CONN.ConnectionString = sconnect
+        GlobalVariables.CONN.Open()
+
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Utilities.connectToDB", Erl)
+        Resume Done
+    End Sub
+
+    Public Sub disconnectFromDB()
+        On Error GoTo ErrorBlock
+        If GlobalVariables.CONN IsNot Nothing Then
+            If GlobalVariables.CONN.State = ConnectionState.Open Then
+                GlobalVariables.CONN.Close()
+            End If
+            GlobalVariables.CONN = Nothing
+        End If
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Module1.disconnectFromDB", Erl)
+        Resume Done
+    End Sub
+
+    Function readConfigfile() As Boolean
+        Dim ErrorFlag As Boolean, textLine As String, pos As Integer
+        Dim sConfigName As String
+
+        ErrorFlag = False
+        sConfigName = Application.StartupPath & "\" & "config.prop"
+        If System.IO.File.Exists(sConfigName) = True Then
+            Dim objReader As New System.IO.StreamReader(sConfigName)
+            GlobalVariables.DBPATHAU = ""
+            GlobalVariables.DBPATHNZ = ""
+            Do While objReader.Peek() <> -1
+                textLine = objReader.ReadLine()
+                textLine = Base64DecodeString(textLine)
+                'MsgBox(textLine)
+                pos = InStr(textLine, "=")
+                If pos > 0 Then
+                    If Left(textLine, (pos - 1)) = "AUACCESSDB" Then
+                        GlobalVariables.DBPATHAU = Mid(textLine, pos + 1)
+                    End If
+                End If
+                If pos > 0 Then
+                    If Left(textLine, (pos - 1)) = "NZACCESSDB" Then
+                        GlobalVariables.DBPATHNZ = Mid(textLine, pos + 1)
+                    End If
+                End If
+            Loop
+            If Len(GlobalVariables.DBPATHAU) = 0 Then
+                MsgBox("FATAL ERROR: ACCESSDB parameter not found. Program exiting.")
+                ErrorFlag = True
+            Else
+                If System.IO.File.Exists(GlobalVariables.DBPATHAU) = False Then
+                    MsgBox("FATAL ERROR: Access DB file " & GlobalVariables.DBPATHAU & " not found. Program exiting.")
+                    ErrorFlag = True
+                    Application.Exit()
+                End If
+            End If
+            If Len(GlobalVariables.DBPATHNZ) = 0 Then
+                MsgBox("FATAL ERROR: ACCESSDB parameter not found. Program exiting.")
+                ErrorFlag = True
+                Application.Exit()
+            Else
+                If System.IO.File.Exists(GlobalVariables.DBPATHNZ) = False Then
+                    MsgBox("FATAL ERROR: Access DB file " & GlobalVariables.DBPATHNZ & " not found. Program exiting.")
+                    ErrorFlag = True
+                    Application.Exit()
+                End If
+            End If
+        Else
+            MsgBox("FATAL ERROR: File: " & sConfigName & " not found. Program exiting.")
+            ErrorFlag = True
+            Application.Exit()
+        End If
+        readConfigfile = ErrorFlag
+    End Function
+
+    Function authenticateusers() As Boolean
+        On Error GoTo ErrorBlock
+        Dim ssqlqry As String, paramvalue As String, instring As String
+        Dim found As Boolean
+        Dim param As String
+
+        Dim ssqlqry2 As String
+
+        Dim cmd As OleDbCommand
+        Dim reader As OleDbDataReader
+
+        Dim cmd2 As OleDbCommand
+        Dim reader2 As OleDbDataReader
+
+        cmd = Nothing
+        reader = Nothing
+
+        cmd2 = Nothing
+        reader2 = Nothing
+
+        Dim paramvalueau As String()
+
+        GlobalVariables.USERLANID = Environ("username")
+        found = False
+        'GlobalVariables.FOUNDAU = False
+        ' GlobalVariables.FOUNDNZ = False
+        GlobalVariables.BOTHCOUNTRIES = False
+
+        connectToDB(GlobalVariables.DBPATHAU)
+
+        ssqlqry = "select param_value " &
+                  "from custom_parameters " &
+                  "where param_type = 'CC_UI_ACCESS_LEVEL'"
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        'cmd2 = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        reader = cmd.ExecuteReader()
+        'reader2 = cmd.ExecuteReader()
+        paramvalue = ""
+        instring = ""
+        If reader.HasRows Then
+            While (reader.Read())
+                paramvalue = reader("param_value").ToString()
+            End While
+        Else
+            MsgBox("Custom parameter: QC_UI_ACCESS_LEVEL is missing !")
+            found = False
+            GoTo Done
+        End If
+
+        'If reader2.HasRows Then
+        '    While (reader2.Read())
+        '        paramvalue = reader2("param_value").ToString()
+        '    End While
+        'Else
+        '    MsgBox("Custom parameter: QC_UI_ACCESS_LEVEL is missing !")
+        '    found = False
+        '    GoTo Done
+        'End If
+
+        paramvalueau = paramvalue.Split(New Char() {","c})
+
+        For Each param In paramvalueau
+            instring = instring & "'" & param & "',"
+        Next
+        instring = Left(instring, Len(instring) - 1)
+        closeRecordSet(cmd, reader)
+
+        ssqlqry = "SELECT a.fullname " &
+                    "from authenticatedusers a , access_level b " &
+                    "where a.lanid = b.lanid " &
+                    "and a.lanid= '" & GlobalVariables.USERLANID & "' and b.accesslevel in (" & instring & ")"
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        reader = cmd.ExecuteReader()
+        If reader.HasRows Then
+            While (reader.Read())
+                GlobalVariables.USERFULLNAME = reader("fullname").ToString()
+                GlobalVariables.HISTINDTABLE = "Hist_AU_Ind_ASW"
+                GlobalVariables.HISTENTTABLE = "Hist_AU_ENTITY_ASW"
+                GlobalVariables.HIST_CASE_ID = "S_id_from_au_post"
+                GlobalVariables.LINKEDCASESTABLE = "Au_Linked_Cases"
+                GlobalVariables.CONVERSATIONTABLE = "AU_CC_Conversation"
+                GlobalVariables.ESCALATIONSTABLE = "AU_CC_Escalations"
+                GlobalVariables.CUSTOMERTABLE = "AU_CC_Customer"
+                GlobalVariables.CASESTATUSTABLE = "AU_Case_Reasons"
+                GlobalVariables.COUNTRY = "Australia"
+                GlobalVariables.DBPATH = GlobalVariables.DBPATHAU
+                GlobalVariables.FOUNDAU = True
+                found = True
+            End While
+        End If
+        'GlobalVariables.USERFULLNAME = cmd.ExecuteScalar()
+        'If Not String.IsNullOrEmpty(GlobalVariables.USERFULLNAME) Then
+        'found = True
+        'End If
+        closeRecordSet(cmd, reader)
+        disconnectFromDB()
+
+        connectToDB(GlobalVariables.DBPATHNZ)
+        ssqlqry = "select param_value " &
+                  "from custom_parameters " &
+                  "where param_type = 'CC_UI_ACCESS_LEVEL'"
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+
+        reader = cmd.ExecuteReader()
+
+        paramvalue = ""
+        instring = ""
+        If reader.HasRows Then
+            While (reader.Read())
+                paramvalue = reader("param_value").ToString()
+            End While
+        Else
+            MsgBox("Custom parameter: QC_UI_ACCESS_LEVEL is missing !")
+            found = False
+            GoTo Done
+        End If
+
+        paramvalueau = paramvalue.Split(New Char() {","c})
+
+        For Each param In paramvalueau
+            instring = instring & "'" & param & "',"
+        Next
+        instring = Left(instring, Len(instring) - 1)
+        closeRecordSet(cmd, reader)
+
+        ssqlqry = "SELECT a.fullname " &
+                    "from authenticatedusers a , access_level b " &
+                    "where a.lanid = b.lanid " &
+                    "and a.lanid= '" & GlobalVariables.USERLANID & "' and b.accesslevel in (" & instring & ")"
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        reader = cmd.ExecuteReader()
+        If reader.HasRows Then
+            While (reader.Read())
+                GlobalVariables.USERFULLNAME = reader("fullname").ToString()
+                GlobalVariables.HISTINDTABLE = "Hist_NZ_Ind_ASW"
+                GlobalVariables.HISTENTTABLE = "Hist_NZ_ENTITY_ASW"
+                GlobalVariables.HIST_CASE_ID = "S_id_from_nz_post"
+                GlobalVariables.LINKEDCASESTABLE = "NZ_Linked_Cases"
+                GlobalVariables.CONVERSATIONTABLE = "NZ_CC_Conversation"
+                GlobalVariables.ESCALATIONSTABLE = "NZ_CC_Escalations"
+                GlobalVariables.CUSTOMERTABLE = "NZ_CC_Customer"
+                GlobalVariables.CASESTATUSTABLE = "NZ_Case_Reasons"
+                GlobalVariables.COUNTRY = "New Zealand"
+                GlobalVariables.DBPATH = GlobalVariables.DBPATHNZ
+                GlobalVariables.FOUNDNZ = True
+                found = True
+            End While
+        End If
+        closeRecordSet(cmd, reader)
+        disconnectFromDB()
+        If GlobalVariables.FOUNDAU = True And GlobalVariables.FOUNDNZ = True Then
+            GlobalVariables.BOTHCOUNTRIES = True
+        End If
+
+Done:
+        authenticateusers = found
+        closeRecordSet(cmd, reader)
+        disconnectFromDB()
+        Exit Function
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Module1.AuthenticateUsers", Erl)
+        Resume Done
+    End Function
+
+    Public Sub closeRecordSet(ByRef pCmd As OleDbCommand, ByRef pReader As OleDbDataReader)
+        On Error GoTo ErrorBlock
+        If pReader IsNot Nothing Then
+            pReader.Close()
+        End If
+        pReader = Nothing
+        If pCmd IsNot Nothing Then
+            pCmd.Dispose()
+        End If
+        pCmd = Nothing
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Module1.closeRecordSet", Erl)
+        Resume Done
+    End Sub
+    Sub DisplayError(ByVal Src As String, ByVal desc As String _
+                    , ByVal sProcname As String, lineNo As Long)
+        On Error GoTo ErrorBlock
+        ' Check If the error happens in topmost sub
+        If GlobalVariables.AlreadyUsed = False Then
+            ' Reset string to remove "VBAProject" and add line number if it exists
+            Src = IIf(lineNo = 0, "", vbNewLine & GlobalVariables.LINE_NO_TEXT & lineNo)
+        End If
+
+        ' Build the final message
+        Dim sMsg As String
+
+        'Resume Done
+
+        sMsg = "The following error occurred: " & vbNewLine & Err.Description _
+                        & vbNewLine & vbNewLine & "Error Location is: "
+        sMsg = sMsg & Src & vbNewLine & sProcname
+
+        ' Display the message
+        MsgBox(sMsg, Title:="Error")
+        ' reset the boolean value
+        GlobalVariables.AlreadyUsed = False
+
+        'Resume Done
+        'disconnectFromDB Conn
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Module1.DisplayError", Erl)
+        Resume Done
+    End Sub
+
+    Sub fetchInputFileData(ByRef pPathname As String)
+        On Error GoTo ErrorBlock
+
+        Dim fd As OpenFileDialog = New OpenFileDialog()
+        Dim strFileName As String
+
+        strFileName = ""
+        fd.Title = "Open File Dialog"
+        fd.InitialDirectory = "C:\"
+        fd.Filter = "Excel files (*.xlsx)|*.xlsx"
+        fd.FilterIndex = 2
+        fd.RestoreDirectory = True
+
+        If fd.ShowDialog() = DialogResult.OK Then
+            strFileName = fd.FileName
+        End If
+        If String.IsNullOrEmpty(strFileName) Then
+            MsgBox("No File Specified.", vbExclamation, "ERROR")
+            GoTo Done
+        End If
+        pPathname = strFileName
+Done:
+        Exit Sub
+ErrorBlock:
+        DisplayError(Err.Source, Err.Description, "Module1.fetchInputFileData", Erl)
+        Resume Done
+    End Sub
+
+End Module
