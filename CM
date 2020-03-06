@@ -1,0 +1,1615 @@
+Imports System.IO
+Imports System.Data.OleDb
+Public Class NZ_Case_Management
+    Inherits System.Windows.Forms.Form
+    Public myCountry As CountrySelector
+    Public LinkedCasesForm As LinkedCases
+    Public CaseId As String
+    Dim saveButtonFlag As Boolean
+    Dim ssqlqry As String
+    Public viewBtnFlag As Boolean
+    Public formLoadFlag As Boolean
+
+    Sub caseIDOptionButton_CheckedChanged() Handles caseIDOptionButton.CheckedChanged
+        On Error GoTo ErrorHandler
+
+        caseIDOptionButton.ForeColor = Color.DodgerBlue
+        caseidTextBox.ReadOnly = False
+        caseidTextBox.Enabled = True
+        cusidTextBox.ReadOnly = True
+        custIdComboBox.Enabled = True
+        custIdComboBox.Enabled = False
+        custIDOptionButton.ForeColor = Color.Black
+        refreshing_all_fields()
+        caseidTextBox.Focus()
+        If GlobalVariables.COUNTRY = "New Zealand" Then
+            custIdComboBox.SelectedItem = "SISNZ"
+        ElseIf GlobalVariables.COUNTRY = "Australia" Then
+            custIdComboBox.SelectedItem = "CAPAU"
+        End If
+
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.caseIDOptionButton_Click", Erl)
+        Resume Done
+    End Sub
+    Sub custIDOptionButton_CheckedChanged() Handles custIDOptionButton.CheckedChanged
+        On Error GoTo ErrorHandler
+        custIDOptionButton.ForeColor = Color.DodgerBlue
+
+        cusidTextBox.ReadOnly = False
+        custIdComboBox.Enabled = True
+        caseidTextBox.ReadOnly = True
+
+        caseIDOptionButton.ForeColor = Color.Black
+        refreshing_all_fields()
+        cusidTextBox.Focus()
+        If GlobalVariables.COUNTRY = "New Zealand" Then
+            custIdComboBox.SelectedItem = "SISNZ"
+        ElseIf GlobalVariables.COUNTRY = "Australia" Then
+            custIdComboBox.SelectedItem = "CAPAU"
+        End If
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.caseIDOptionButton_Click", Erl)
+        Resume Done
+    End Sub
+
+
+    Private Sub newCaseResetBtn_Click(sender As Object, e As EventArgs) Handles newCaseResetBtn.Click
+        On Error GoTo ErrorHandler
+        SIDInput.Text = ""
+        custTypeComboBox.Text = ""
+        CustIdInput.Text = ""
+        CustnameInput.Text = ""
+        CaseReasonInput.Text = ""
+        ForeignIndiciaInput.Text = ""
+        KYCIDInput.Text = ""
+        ReminderletterdateInput.ResetText()
+        NCEmailTextBox.Text = ""
+        CustomerSetComboBox.Text = ""
+
+        newCaseCustIdComboBox.SelectedIndex = 0
+        IngestiondateInput.ResetText()
+Done:
+        Exit Sub
+
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.resetBtn_Click", Erl)
+        Resume Done
+    End Sub
+
+    Sub createQuery(ByRef psqlqry As String, ByRef pRecSet As Object)
+        On Error GoTo ErrorHandler
+
+        If IsDate(pRecSet) Then
+            pRecSet = Format(CDate(pRecSet), "dd-MMM-yyyy")
+            pRecSet = Replace(pRecSet, "'", "''")
+            psqlqry = psqlqry & "'" & pRecSet & "' , "
+            GoTo Done
+        End If
+        If IsDBNull(pRecSet) Or pRecSet = "" Then
+            psqlqry = psqlqry & "Null ,"
+        Else
+            pRecSet = Replace(pRecSet, "'", "''")
+            psqlqry = psqlqry & "'" & pRecSet & "' , "
+        End If
+
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.createQuery", Erl)
+        Resume Done
+    End Sub
+
+    Sub clearAllFields()
+        On Error GoTo ErrorHandler
+        typeOfCallTextBox.Text = ""
+        accountNumberListBox.Clear()
+        caseDataLinkedCasesListBox.Items.Clear()
+        Reasons.UnassignedReasonsListbox.Items.Clear()
+        Reasons.AssignedReasonsListBox.Items.Clear()
+        conversationDateTextBox.Text = ""
+        callOutcomeTextBox.Text = ""
+        cusResCheckBox.Checked = False
+        cusResCheckBox.Enabled = True
+        lstUpdOnTextBox.Text = ""
+        lstUpdByTextBox.Text = ""
+        caseidTextBox.Text = ""
+        escalateTextBox.Items.Clear()
+        cusidTextBox.Text = ""
+        dateTextBox.Text = ""
+        cusDobTextBox.Text = ""
+        cusNameTextBox.Text = ""
+        cusTypeTextBox.Text = ""
+        customerSetTextBox.Text = ""
+        tinTextBox.Text = ""
+        assoPartiesTextBox.Text = ""
+        fatcaClassiTextBox.Text = ""
+        crsClassiTextBox.Text = ""
+        remediatedTextBox.Text = ""
+        adhocidTextBox.Text = ""
+        remarksTextBox.Text = ""
+        adhocUserTextBox.Text = ""
+        crsStatusTextBox.Text = ""
+        fatcaStatusTextBox.Text = ""
+        frnIndiciaTextBox.Text = ""
+        caseReasonTextBox.Text = ""
+        giinTextBox.Text = ""
+        cityTextBox.Text = ""
+        postTextBox.Text = ""
+        countryTextBox.Text = ""
+        add4TextBox.Text = ""
+        add3TextBox.Text = ""
+        add2TextBox.Text = ""
+        add1TextBox.Text = ""
+        caseStatusTextBox.Text = ""
+        caseOfficerTextBox.Text = ""
+        qcofficerTextBox.Text = ""
+        qcstatusTextBox.Text = ""
+        custIdComboBox.Text = ""
+
+        'FOR udpate case
+        caseStatusComboBox.Text = ""
+        reasonComboBox.Text = ""
+        initialFatcaClassiTextBox.Text = ""
+        initialFatcaStatusTextBox.Text = ""
+        initialCrsClassiTextBox.Text = ""
+        initialCrsStatusTextBox.Text = ""
+        currentFatcaClassiTextBox.Text = ""
+        currentFatcaStatusTextBox.Text = ""
+        currentCrsClassiTextBox.Text = ""
+        currentCrsStatusTextBox.Text = ""
+        newFatcaClassiComboBox.Text = ""
+        newFatcaStatusComboBox.Text = ""
+        newCrsClassiComboBox.Text = ""
+        newCrsStatusComboBox.Text = ""
+        newTinTextBox.Text = ""
+        newGiinTextBox.Text = ""
+        updateRemarksTextBox.Text = ""
+        miscAdhocComboBox.Text = ""
+        miscRemediatedComboBox.Text = ""
+        reportingYearTextBox.Text = ""
+
+
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.clearAllFields", Erl)
+        Resume Done
+    End Sub
+    Sub refreshing_all_fields()
+        On Error GoTo ErrorHandler
+        CaseId = ""
+        clearAllFields()
+        TabControl1.SelectedIndex = 0
+        escalateTextBox.Visible = False
+        reasonCaseDataLabel.Visible = False
+        reasonComboBox.Visible = False
+        reasonUpdLabel.Visible = False
+
+        caseStatusComboBox.Enabled = False
+        reasonComboBox.Enabled = False
+        newFatcaClassiComboBox.Enabled = False
+        newFatcaStatusComboBox.Enabled = False
+        newCrsClassiComboBox.Enabled = False
+        newCrsStatusComboBox.Enabled = False
+        miscAdhocComboBox.Enabled = False
+        miscRemediatedComboBox.Enabled = False
+        updateRemarksTextBox.Enabled = False
+        newTinTextBox.Enabled = False
+        newGiinTextBox.Enabled = False
+        saveBtn.Enabled = False
+        saveButtonFlag = False
+        caseidTextBox.Focus()
+
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.refreshing_all_fields", Erl)
+        Resume Done
+    End Sub
+
+    Sub loadDropdowns(ByRef pConn As Object, ByRef pObj As Object, ByRef ssqlqry As String, ByRef blankval As Boolean)
+        On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        Dim i As Integer
+
+        If pConn.State = 0 Then
+            MsgBox("Not connected to DB!!!")
+            GoTo Done
+        End If
+
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        oledbreader = cmd.ExecuteReader
+        If oledbreader.HasRows Then
+            i = 0
+            If blankval = True Then
+                pObj.items.Add("")
+            End If
+            While oledbreader.Read
+                If IsDBNull(oledbreader(0)) = True Then
+                    Exit While
+                End If
+                pObj.items.Add(oledbreader(0))
+            End While
+        End If
+        closeRecordSet(cmd, oledbreader)
+
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.loaddropdowns", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub NZ_Case_Management_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        'On Error GoTo ErrorHandler
+        Dim ssqlqry As String
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        GlobalVariables.PROGVER = "3.3"
+        formLoadFlag = True
+
+        Me.AutoScaleMode = Windows.Forms.AutoScaleMode.Font
+        If InStr(UCase(GlobalVariables.DBPATHNZ), "DEV") <> 0 And InStr(UCase(GlobalVariables.DBPATHAU), "DEV") <> 0 Then
+            Me.Text = "Case Management " & GlobalVariables.PROGVER & " (DEV)"
+        ElseIf InStr(UCase(GlobalVariables.DBPATHNZ), "TEST") <> 0 And InStr(UCase(GlobalVariables.DBPATHAU), "TEST") <> 0 Then
+            Me.Text = "Case Management " & GlobalVariables.PROGVER & " (TEST)"
+        Else
+            Me.Text = "Case Management " & GlobalVariables.PROGVER
+        End If
+        TabControl1.SelectedIndex = 0
+        TabControl1.TabPages.Remove(TabPage3)
+
+        loginuserLbl.Text = GlobalVariables.USERFULLNAME
+        countryLabel.Text = GlobalVariables.COUNTRY
+
+
+
+        escalateTextBox.Visible = False
+        reasonCaseDataLabel.Visible = False
+
+        custIdComboBox.Enabled = True
+        cusidTextBox.ReadOnly = True
+
+        ' making all fields read-only
+        typeOfCallTextBox.ReadOnly = True
+        conversationDateTextBox.ReadOnly = True
+        callOutcomeTextBox.ReadOnly = True
+        lstUpdOnTextBox.ReadOnly = True
+        lstUpdByTextBox.ReadOnly = True
+        cusResCheckBox.Enabled = True
+        dateTextBox.ReadOnly = True
+        cusDobTextBox.ReadOnly = True
+        cusNameTextBox.ReadOnly = True
+        cusTypeTextBox.ReadOnly = True
+        customerSetTextBox.ReadOnly = True
+        tinTextBox.ReadOnly = True
+        assoPartiesTextBox.ReadOnly = True
+        fatcaClassiTextBox.ReadOnly = True
+        crsClassiTextBox.ReadOnly = True
+        remediatedTextBox.ReadOnly = True
+        adhocidTextBox.ReadOnly = True
+        remarksTextBox.ReadOnly = True
+        adhocUserTextBox.ReadOnly = True
+        crsStatusTextBox.ReadOnly = True
+        fatcaStatusTextBox.ReadOnly = True
+        frnIndiciaTextBox.ReadOnly = True
+        caseReasonTextBox.ReadOnly = True
+        giinTextBox.ReadOnly = True
+        cityTextBox.ReadOnly = True
+        postTextBox.ReadOnly = True
+        countryTextBox.ReadOnly = True
+        add4TextBox.ReadOnly = True
+        add3TextBox.ReadOnly = True
+        add2TextBox.ReadOnly = True
+        add1TextBox.ReadOnly = True
+        caseStatusTextBox.ReadOnly = True
+        caseOfficerTextBox.ReadOnly = True
+        qcofficerTextBox.ReadOnly = True
+        qcstatusTextBox.ReadOnly = True
+        reportingYearTextBox.ReadOnly = True
+
+        'making fields of update case non editable
+        initialFatcaClassiTextBox.ReadOnly = True
+        initialFatcaStatusTextBox.ReadOnly = True
+        initialCrsStatusTextBox.ReadOnly = True
+        initialCrsClassiTextBox.ReadOnly = True
+        currentFatcaClassiTextBox.ReadOnly = True
+        currentFatcaStatusTextBox.ReadOnly = True
+        currentCrsStatusTextBox.ReadOnly = True
+        currentCrsClassiTextBox.ReadOnly = True
+        caseStatusComboBox.Enabled = False
+        reasonComboBox.Enabled = False
+        newFatcaClassiComboBox.Enabled = False
+        newFatcaStatusComboBox.Enabled = False
+        newCrsClassiComboBox.Enabled = False
+        newCrsStatusComboBox.Enabled = False
+        miscAdhocComboBox.Enabled = False
+        miscRemediatedComboBox.Enabled = False
+        updateRemarksTextBox.Enabled = False
+        newTinTextBox.Enabled = False
+        newGiinTextBox.Enabled = False
+        saveBtn.Enabled = False
+
+        reasonComboBox.Visible = False
+        reasonUpdLabel.Visible = False
+        ViewReasonsBtn.Visible = False
+        reasonComboBox.ReadOnly = True
+
+        AgentUserID.ReadOnly = True
+
+
+        custTypeComboBox.Items.Add("")
+        custTypeComboBox.Items.Add("GTC Individual")
+        custTypeComboBox.Items.Add("GTC Entity")
+
+
+        AgentUserID.Text = GlobalVariables.USERFULLNAME
+        'Case allocation
+        allocatedCasesBtn.Visible = False
+        Allocated_Cases.Allocated_Cases_Load()
+        connectToDB(GlobalVariables.DBPATH)
+        If GlobalVariables.CONN.State = 0 Then
+            MsgBox("Not connected to DB!!!")
+            GoTo Done
+        End If
+        ssqlqry = "Select AccessLevel " &
+                "from Access_level " &
+                "where lanid = '" & GlobalVariables.USERLANID & "' "
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        oledbreader = cmd.ExecuteReader
+        While oledbreader.Read
+            If oledbreader(0) = "Manager" Then
+                TabControl1.TabPages.Add(TabPage3)
+            End If
+        End While
+
+        loadDropdowns(GlobalVariables.CONN, caseStatusComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'CASE_STATUS'", True)
+        loadDropdowns(GlobalVariables.CONN, newFatcaClassiComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'FATCA_CLASSIFICATION'", True)
+        loadDropdowns(GlobalVariables.CONN, newCrsClassiComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'CRS_CLASSIFICATION'", True)
+        loadDropdowns(GlobalVariables.CONN, newCrsStatusComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'CRS_STATUS'", True)
+        loadDropdowns(GlobalVariables.CONN, newFatcaStatusComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'FATCA_STATUS'", True)
+        'loadDropdowns(GlobalVariables.CONN, reasonComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'ESCALATION_REASON'", True)
+        loadDropdowns(GlobalVariables.CONN, miscAdhocComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'AR_ADHOC_ID'", True)
+        loadDropdowns(GlobalVariables.CONN, miscRemediatedComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'REMEDIATED'", False)
+        loadDropdowns(GlobalVariables.CONN, custIdComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'CUSTID_PREFIX'", True)
+        loadDropdowns(GlobalVariables.CONN, newCaseCustIdComboBox, "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS where PARAM_TYPE = 'CUSTID_PREFIX'", False)
+        loadDropdowns(GlobalVariables.CONN, CustomerSetComboBox, "Select Distinct FILT1 from CUSTOM_PARAMETERS WHERE PARAM_TYPE = 'CUSTOMER_SET' AND FILT2 = 'REPORT_TITLE'", True)
+
+        newCaseCustIdComboBox.SelectedIndex = 0
+        GlobalVariables.LAST_ADHOC_ID_FLAG = fetchCustomParameterValue("LAST_ADHOC_ID_VISIBLE")
+        GlobalVariables.LAST_ADHOC_USER_FLAG = fetchCustomParameterValue("LAST_ADHOC_USER_VISIBLE")
+        GlobalVariables.ADHOC_ID_FLAG = fetchCustomParameterValue("ADHOC_ID_VISIBLE")
+
+        caseIDOptionButton.Checked = True
+        caseIDOptionButton_CheckedChanged()
+        If GlobalVariables.LAST_ADHOC_ID_FLAG = False Then
+            lastAdhocIDLabel.Visible = False
+            adhocidTextBox.Visible = False
+            QcOfficerLabel.Location = New Point(372, 180)
+            qcofficerTextBox.Location = New Point(494, 173)
+        End If
+        If GlobalVariables.LAST_ADHOC_USER_FLAG = False Then
+            lastAdhocUserLabel.Visible = False
+            adhocUserTextBox.Visible = False
+            QcStatusLabel.Location = New Point(372, 221)
+            qcstatusTextBox.Location = New Point(494, 214)
+        End If
+        If GlobalVariables.ADHOC_ID_FLAG = False Then
+            adhocIDLabel.Visible = False
+            miscAdhocComboBox.Visible = False
+            remediateLabel.Location = New Point(25, 34)
+            miscRemediatedComboBox.Location = New Point(178, 26)
+        End If
+        caseidTextBox.Focus()
+        formLoadFlag = False
+Done:
+        disconnectFromDB()
+        Exit Sub
+        'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.UserForm_Initialize", Erl)
+        '        Resume Done
+    End Sub
+
+    Function fetchCustomParameterValue(ByRef p_param_name As String) As Boolean
+        On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        Dim ssqlqry As String
+
+        ssqlqry = "SELECT PARAM_VALUE FROM CUSTOM_PARAMETERS WHERE PARAM_TYPE='" & p_param_name & "'"
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+        oledbreader = cmd.ExecuteReader
+        oledbreader.Read()
+        If oledbreader.HasRows Then
+            fetchCustomParameterValue = oledbreader(0)
+        End If
+        closeRecordSet(cmd, oledbreader)
+Done:
+        Exit Function
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.fetchCustomParameterValue", Erl)
+        Resume Done
+    End Function
+    Sub setFieldValue(pObj As Object, pStrValue As Object)
+        On Error GoTo ErrorHandler
+        'pStrValue.ToString()
+        If IsDate(pStrValue) Then
+            pObj.Text = Format(CDate(pStrValue), "dd-MMM-yyyy")
+            GoTo Done
+        End If
+
+        If IsDBNull(pStrValue) = True Then
+            pObj.text = ""
+        ElseIf pStrValue = "" Then
+            pObj.text = ""
+        Else
+            pObj.text = pStrValue
+        End If
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.setFieldValue", Erl)
+        Resume Done
+    End Sub
+    Sub fetchAndLoadCustomerData(TableName As String)
+        'On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        Dim cmd1 As OleDbCommand
+        Dim oledbreader1 As OleDbDataReader
+        Dim ssqlqry1 As String
+        Dim pre As String
+        Dim paramvalue As Integer
+        Dim temp As String
+        connectToDB(GlobalVariables.DBPATH)
+
+        If GlobalVariables.CONN.State = 0 Then
+            'MsgBox "Not connected to DB!!!"
+            GoTo Done
+        End If
+        Try
+            ssqlqry = " SELECT Country ,Type,Name,Cust_Id,  Associated_Parties, Case_Reason,    Foreign_Indicia,    FATCA_Classification," &
+                "   FATCA_Classification_Status ,CRS_Classification ,CRS_Classification_Status," &
+                "  Customer_Date_Of_Birth ,Address_1  ,Address_2, Address_3,  Address_4,  City,   Post," &
+                " Date_Of_Ingestion , Remarks, TIN, GIIN, Case_Status, Remediate, User_Id, Esc_Reason, QC_Pass_Fail, QC_User, Cust_Resp, " &
+                " FATCA_Classification_Curr, FATCA_Classification_Status_Curr, CRS_Classification_Curr , CRS_Classification_Status_Curr, " &
+                "Date_Class_Upd , User_Id_Class , Reporting_year, WorkType, Report_Title " &
+                "FROM " & TableName & " where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            oledbreader = cmd.ExecuteReader
+            'MsgBox rs(11)
+            If oledbreader.HasRows Then
+                While oledbreader.Read
+                    caseidTextBox.Text = CaseId
+                    setFieldValue(cusidTextBox, oledbreader(3))
+                    ssqlqry1 = "Select count(*) from Custom_Alerts_EC where Cust_ID ='" & cusidTextBox.Text & "'"
+                    cmd1 = New OleDbCommand(ssqlqry1, GlobalVariables.CONN)
+                    paramvalue = cmd1.ExecuteScalar
+                    If paramvalue > 0 Then
+                        cmd1.Dispose()
+                        ssqlqry1 = "Select b.PARAM_VALUE from Custom_Alerts_EC a , CUSTOM_PARAMETERS b where  Cust_ID='" & cusidTextBox.Text & "' and a.Message_ID=b.PARAM_TYPE and a.End_Date > #" & Date.Today & "#"
+                        cmd1 = New OleDbCommand(ssqlqry1, GlobalVariables.CONN)
+                        oledbreader1 = cmd1.ExecuteReader
+                        If oledbreader1.HasRows Then
+                            temp = ""
+                            While oledbreader1.Read
+                                temp = "ALERT: " & oledbreader1(0) & vbCrLf & vbCrLf & temp
+                            End While
+                            MsgBox(temp, vbInformation)
+                        End If
+                        closeRecordSet(cmd1, oledbreader1)
+                    End If
+                    pre = Strings.Left(cusidTextBox.Text, 5)
+                    If InStr(1, pre, "BBDNZ", vbTextCompare) > 0 Or InStr(1, pre, "DBLNZ", vbTextCompare) > 0 Or InStr(1, pre, "ONANZ", vbTextCompare) > 0 Or InStr(1, pre, "SISNZ", vbTextCompare) > 0 Or InStr(1, pre, "WSLNZ", vbTextCompare) > 0 Or InStr(1, pre, "CACAU", vbTextCompare) > 0 Or InStr(1, pre, "CAPAU", vbTextCompare) > 0 Or InStr(1, pre, "DLDAU", vbTextCompare) > 0 Or InStr(1, pre, "EVEAU", vbTextCompare) > 0 Or InStr(1, pre, "GTKAU", vbTextCompare) > 0 Or InStr(1, pre, "MDZAU", vbTextCompare) > 0 Then
+                        cusidTextBox.Text = Replace(cusidTextBox.Text, pre, "")
+                        custIdComboBox.Text = pre
+                    End If
+                    setFieldValue(countryTextBox, oledbreader(0))
+                    setFieldValue(cusTypeTextBox, oledbreader(1))
+                    setFieldValue(cusNameTextBox, oledbreader(2))
+                    setFieldValue(assoPartiesTextBox, oledbreader(4))
+                    setFieldValue(caseReasonTextBox, oledbreader(5))
+                    setFieldValue(frnIndiciaTextBox, oledbreader(6))
+                    setFieldValue(fatcaClassiTextBox, oledbreader(7))
+                    setFieldValue(currentFatcaClassiTextBox, oledbreader(7))
+                    setFieldValue(fatcaStatusTextBox, oledbreader(8))
+                    setFieldValue(currentFatcaStatusTextBox, oledbreader(8))
+                    setFieldValue(crsClassiTextBox, oledbreader(9))
+                    setFieldValue(currentCrsClassiTextBox, oledbreader(9))
+                    setFieldValue(crsStatusTextBox, oledbreader(10))
+                    setFieldValue(currentCrsStatusTextBox, oledbreader(10))
+                    setFieldValue(cusDobTextBox, oledbreader(11))
+                    'If IsDate(cusDobTextBox.Text) Then
+                    '    cusDobTextBox.Text = Format(CDate(cusDobTextBox.Text), "dd-mmm-yyyy")
+                    'End If
+                    setFieldValue(add1TextBox, oledbreader(12))
+                    setFieldValue(add2TextBox, oledbreader(13))
+                    setFieldValue(add3TextBox, oledbreader(14))
+                    setFieldValue(add4TextBox, oledbreader(15))
+                    setFieldValue(cityTextBox, oledbreader(16))
+                    setFieldValue(postTextBox, oledbreader(17))
+                    setFieldValue(dateTextBox, oledbreader(18))
+                    'If IsDate(dateTextBox.Text) Then
+                    '    dateTextBox.Text = Format(CDate(dateTextBox.Text), "dd-mmm-yyyy")
+                    'End If
+                    setFieldValue(remarksTextBox, oledbreader(19))
+                    setFieldValue(updateRemarksTextBox, oledbreader(19))
+                    setFieldValue(tinTextBox, oledbreader(20))
+                    setFieldValue(newTinTextBox, oledbreader(20))
+                    setFieldValue(giinTextBox, oledbreader(21))
+                    setFieldValue(newGiinTextBox, oledbreader(21))
+                    setFieldValue(caseStatusTextBox, oledbreader(22))
+                    setFieldValue(remediatedTextBox, oledbreader(23))
+                    setFieldValue(caseOfficerTextBox, oledbreader(24))
+                    If InStr(1, caseStatusTextBox.Text, "Escalated") > 0 Or InStr(1, caseStatusTextBox.Text, "Manual Letter") > 0 Or InStr(1, caseStatusTextBox.Text, "On-Hold") > 0 Then
+                        escalateTextBox.Visible = True
+                        reasonCaseDataLabel.Visible = True
+                        'If IsDBNull(oledbreader(25)) = True Then
+                        '    escalateTextBox.Text = ""
+                        'Else
+                        '    escalateTextBox.Text = oledbreader(25)
+                        'End If
+                        ssqlqry1 = "Select Reason from " & GlobalVariables.CASESTATUSTABLE & " where Case_ID = '" & CaseId & "'"
+                        cmd1 = New OleDbCommand(ssqlqry1, GlobalVariables.CONN)
+                        oledbreader1 = cmd1.ExecuteReader
+                        If oledbreader1.HasRows Then
+                            While oledbreader1.Read
+                                escalateTextBox.Items.Add(oledbreader1(0))
+                            End While
+                            escalateTextBox.SelectedIndex = 0
+                        End If
+                        closeRecordSet(cmd1, oledbreader1)
+                    End If
+                    setFieldValue(qcstatusTextBox, oledbreader(26))
+                    setFieldValue(qcofficerTextBox, oledbreader(27))
+                    'Dim temp As String = oledbreader(28)
+                    If InStr(1, oledbreader(28).ToString, "yes", vbTextCompare) > 0 Then
+                        cusResCheckBox.Checked = True
+                        cusResCheckBox.Enabled = False
+                    Else
+                        cusResCheckBox.Checked = False
+                        cusResCheckBox.Enabled = True
+                    End If
+                    setFieldValue(initialFatcaClassiTextBox, oledbreader(29))
+                    setFieldValue(initialFatcaStatusTextBox, oledbreader(30))
+                    setFieldValue(initialCrsClassiTextBox, oledbreader(31))
+                    setFieldValue(initialCrsStatusTextBox, oledbreader(32))
+                    setFieldValue(lstUpdOnTextBox, oledbreader(33))
+                    'If IsDate(lstUpdOnTextBox.Text) Then
+                    '    lstUpdOnTextBox.Text = Format(CDate(lstUpdOnTextBox.Text), "dd-mmm-yyyy")
+                    'End If
+                    setFieldValue(lstUpdByTextBox, oledbreader(34))
+                    setFieldValue(reportingYearTextBox, oledbreader(35))
+                    setFieldValue(customerSetTextBox, oledbreader(36))
+
+                    ssqlqry1 = "Select FILT1, PARAM_VALUE from CUSTOM_PARAMETERS where PARAM_TYPE = 'CUSTOMER_SET'"
+                    cmd1 = New OleDbCommand(ssqlqry1, GlobalVariables.CONN)
+                    oledbreader1 = cmd1.ExecuteReader
+                    If oledbreader1.HasRows Then
+                        While oledbreader1.Read
+                            If InStr(1, oledbreader(36).ToString, oledbreader1(1).ToString, vbTextCompare) > 0 Then
+                                customerSetTextBox.Text = oledbreader1(0)
+                            End If
+                        End While
+                    End If
+                    closeRecordSet(cmd1, oledbreader1)
+
+                    ssqlqry1 = "Select FILT1, PARAM_VALUE from CUSTOM_PARAMETERS where PARAM_TYPE = 'CUSTOMER_SET'"
+                    cmd1 = New OleDbCommand(ssqlqry1, GlobalVariables.CONN)
+                    oledbreader1 = cmd1.ExecuteReader
+                    If oledbreader1.HasRows Then
+                        While oledbreader1.Read
+                            If InStr(1, oledbreader(37).ToString, oledbreader1(1).ToString, vbTextCompare) > 0 Then
+                                customerSetTextBox.Text = oledbreader1(0)
+                            End If
+                        End While
+                    End If
+                    closeRecordSet(cmd1, oledbreader1)
+                End While
+            Else
+                MsgBox("NO data found!", vbCritical)
+            End If
+            closeRecordSet(cmd, oledbreader)
+            'conversation and linked cases
+            ssqlqry = "Select count(*) from ( select cust_id from " & TableName & " where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "') a , " & TableName & " " &
+                        " where a.cust_id = " & TableName & ".cust_id "
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar
+            If paramvalue > 1 Then
+                cmd.Dispose()
+                ssqlqry = "Select case_id from " & GlobalVariables.LINKEDCASESTABLE & " where cust_id = ( Select cust_id from " & TableName & " where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "' )"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                oledbreader = cmd.ExecuteReader
+                If oledbreader.HasRows Then
+                    While oledbreader.Read()
+                        caseDataLinkedCasesListBox.Items.Add(oledbreader(0))
+                    End While
+                End If
+                closeRecordSet(cmd, oledbreader)
+            End If
+
+            ssqlqry = "Select CC_Conv_Type_Of_Call, CC_Conv_Date_Worked, CC_Conv_Call_Outcome from " & GlobalVariables.CONVERSATIONTABLE & " where CC_Conv_Nbr = " &
+                       " (Select max(CC_Conv_Nbr)  from " & GlobalVariables.CONVERSATIONTABLE & " where CC_Conv_Case_Id= '" & CaseId & "') and CC_Conv_Case_Id = '" & CaseId & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            oledbreader = cmd.ExecuteReader
+            If oledbreader.HasRows Then
+                While oledbreader.Read
+                    setFieldValue(typeOfCallTextBox, oledbreader(0))
+                    setFieldValue(conversationDateTextBox, oledbreader(1))
+                    setFieldValue(callOutcomeTextBox, oledbreader(2))
+                End While
+            End If
+            accountNumberListBox.Clear()
+            accountNumberListBox.Columns.Add(text:="Account Number", width:=120)
+            accountNumberListBox.Columns.Add(text:="Account Open Date", width:=150)
+            ssqlqry = "Select count(*) From Customer_Account " &
+            "WHERE Cust_Id ='" & custIdComboBox.Text & cusidTextBox.Text & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar()
+            cmd.Dispose()
+            If paramvalue > 0 Then
+                ssqlqry = "Select * From Customer_Account WHERE Cust_id ='" & custIdComboBox.Text & cusidTextBox.Text & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                oledbreader = cmd.ExecuteReader()
+                If oledbreader.HasRows Then
+                    While oledbreader.Read
+                        Dim LstItem As ListViewItem = accountNumberListBox.Items.Add(text:=oledbreader.Item(2))
+                        LstItem.SubItems.Add(oledbreader.Item(3))
+                    End While
+                End If
+            End If
+            'For case officer and adhoc of individual
+            If GlobalVariables.COUNTRY = "New Zealand" Then
+                ssqlqry = "SELECT count(*) FROM Adhoc_Register_Data where ARD_S_ID_FROM_NZ_POST = '" & CaseId & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar
+                If paramvalue > 0 Then
+                    cmd.Dispose()
+                    ssqlqry = "SELECT ARD_User_id , ARD_ADHOC_ID FROM Adhoc_Register_Data where" &
+                        " ARD_S_ID_FROM_NZ_POST = '" & CaseId & "'"
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    oledbreader = cmd.ExecuteReader
+                    If oledbreader.HasRows Then
+                        While oledbreader.Read
+                            setFieldValue(adhocUserTextBox, oledbreader(0))
+                            setFieldValue(adhocidTextBox, oledbreader(1))
+                        End While
+                    Else
+                        MsgBox("No data found!", vbCritical)
+                    End If
+                    closeRecordSet(cmd, oledbreader)
+                Else
+                    cmd.Dispose()
+                End If
+            End If
+        Catch es As Exception
+            MsgBox("fetchAndLoadCustomerData " & es.Message)
+            GoTo Done
+        End Try
+Done:
+        disconnectFromDB()
+        Exit Sub
+'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.fetchAndLoadCustomerData", Erl)
+        '        Resume Done
+    End Sub
+
+    Private Sub closeBtn_Click(sender As Object, e As EventArgs) Handles closeBtn.Click
+        On Error GoTo ErrorHandler
+        Me.Close()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.CloseBtn_Click", Erl)
+        Resume Done
+    End Sub
+
+    Public Sub searchCaseDetailBtn_Click() Handles searchCaseDetailBtn.Click
+        ' On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim paramvalue As Integer
+        Dim oledbReader As OleDbDataReader
+        Dim ssqlqry As String
+        Dim splitval As String
+        Dim pre As String
+
+        caseidTextBox.ReadOnly = True
+        cusidTextBox.ReadOnly = True
+        custIdComboBox.Enabled = False
+
+        If saveButtonFlag = False Then
+            connectToDB(GlobalVariables.DBPATH)
+        End If
+
+        If GlobalVariables.CONN.State = 0 Then
+            MsgBox("Not connected to DB!!", vbInformation)
+            GoTo Done
+        End If
+
+        If custIDOptionButton.Checked = True Then
+            If cusidTextBox.Text = "" Then
+                MsgBox("Please enter a Customer ID", vbCritical)
+                custIDOptionButton_CheckedChanged()
+                GoTo Done
+            End If
+            TabControl1.TabIndex = 0
+            cusidTextBox.Text = Trim(cusidTextBox.Text)
+            pre = Strings.Left(cusidTextBox.Text, 5)
+            If InStr(1, pre, "BBDNZ", vbTextCompare) > 0 Or InStr(1, pre, "DBLNZ", vbTextCompare) > 0 Or InStr(1, pre, "ONANZ", vbTextCompare) > 0 Or InStr(1, pre, "SISNZ", vbTextCompare) > 0 Or InStr(1, pre, "WSLNZ", vbTextCompare) > 0 Or InStr(1, pre, "CACAU", vbTextCompare) > 0 Or InStr(1, pre, "CAPAU", vbTextCompare) > 0 Or InStr(1, pre, "DLDAU", vbTextCompare) > 0 Or InStr(1, pre, "EVEAU", vbTextCompare) > 0 Or InStr(1, pre, "GTKAU", vbTextCompare) > 0 Or InStr(1, pre, "MDZAU", vbTextCompare) > 0 Then
+                cusidTextBox.Text = Replace(cusidTextBox.Text, pre, "")
+                custIdComboBox.Text = pre
+            End If
+            'for ind
+            Try
+                If GlobalVariables.COUNTRY = "New Zealand" And custIdComboBox.Text = "SISNZ" Then
+                    splitval = cusidTextBox.Text
+                    If splitval.Length < 14 Then
+                        splitval = splitval.ToString.PadLeft(14, "0")
+                        cusidTextBox.Text = splitval
+                    End If
+                End If
+                If custIdComboBox.Text = "" Then
+                    ssqlqry = "Select count(*) from " & GlobalVariables.HISTINDTABLE & " where Cust_Id like '%" & cusidTextBox.Text & "%'"
+                Else
+                    ssqlqry = "Select count(*) from " & GlobalVariables.HISTINDTABLE & " where Cust_Id = '" & custIdComboBox.Text & cusidTextBox.Text & "'"
+                End If
+
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar
+                If paramvalue > 0 Then
+                    If paramvalue = 1 Then
+                        cmd.Dispose()
+                        If custIdComboBox.Text = "" Then
+                            ssqlqry = "Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTINDTABLE & " where Cust_Id like '%" & cusidTextBox.Text & "%'"
+                        Else
+                            ssqlqry = "Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTINDTABLE & " where Cust_Id = '" & custIdComboBox.Text & cusidTextBox.Text & "'"
+                        End If
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        oledbReader = cmd.ExecuteReader
+                        oledbReader.Read()
+                        CaseId = oledbReader(0)
+                        fetchAndLoadCustomerData(GlobalVariables.HISTINDTABLE)
+                        closeRecordSet(cmd, oledbReader)
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+                        GoTo Done
+                    ElseIf paramvalue > 1 Then
+
+                        If LinkedCasesForm Is Nothing Then
+                            LinkedCasesForm = New LinkedCases
+                            LinkedCasesForm.myForm = Me
+                        End If
+                        LinkedCases.ShowDialog()
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+                        GoTo Done
+                    End If
+                End If
+                cmd.Dispose()
+
+                'for entity
+
+                If custIdComboBox.Text = "" Then
+                    ssqlqry = " Select count(*) from " & GlobalVariables.HISTENTTABLE & " where Cust_Id like '%" & cusidTextBox.Text & "%'"
+                Else
+                    ssqlqry = " Select count(*) from " & GlobalVariables.HISTENTTABLE & " where Cust_Id = '" & custIdComboBox.Text & cusidTextBox.Text & "'"
+                End If
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar
+                If paramvalue > 0 Then
+                    If paramvalue = 1 Then
+                        cmd.Dispose()
+                        If custIdComboBox.Text = "" Then
+                            ssqlqry = " Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTENTTABLE & " where Cust_Id like '%" & cusidTextBox.Text & "%'"
+                        Else
+                            ssqlqry = " Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTENTTABLE & " where Cust_Id = '" & custIdComboBox.Text & cusidTextBox.Text & "'"
+                        End If
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        oledbReader = cmd.ExecuteReader
+                        oledbReader.Read()
+                        CaseId = oledbReader(0)
+                        fetchAndLoadCustomerData(GlobalVariables.HISTENTTABLE)
+                        closeRecordSet(cmd, oledbReader)
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+
+                        GoTo Done
+                    ElseIf paramvalue > 1 Then
+
+                        If LinkedCasesForm Is Nothing Then
+                            LinkedCasesForm = New LinkedCases
+                            LinkedCasesForm.myForm = Me
+                        End If
+                        LinkedCases.ShowDialog()
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+                    End If
+                Else
+                    cmd.Dispose()
+                    disconnectFromDB()
+                    MsgBox("Customer ID Not found!", vbCritical)
+                    custIDOptionButton_CheckedChanged()
+                    GoTo Done
+                End If
+            Catch es As Exception
+                MsgBox("searchCaseDetailBtn_Click " & es.Message)
+                GoTo Done
+            End Try
+        ElseIf caseIDOptionButton.Checked = True Then
+            If caseidTextBox.Text = "" Then
+                MsgBox("Please enter a case id", vbCritical)
+                caseIDOptionButton.Checked = True
+                caseIDOptionButton_CheckedChanged()
+            Else
+                'sql
+                TabControl1.SelectedIndex = 0
+                CaseId = caseidTextBox.Text
+                CaseId = Replace(CaseId, " ", "")
+                Try
+                    'For individual
+                    ssqlqry = "SELECT count(*) FROM " & GlobalVariables.HISTINDTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "'"
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    paramvalue = cmd.ExecuteScalar
+
+                    If paramvalue > 0 Then
+                        cmd.Dispose()
+                        fetchAndLoadCustomerData(GlobalVariables.HISTINDTABLE)
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+                        GoTo Done
+                    End If
+                    cmd.Dispose()
+
+                    'For entity
+                    ssqlqry = "SELECT count(*) FROM " & GlobalVariables.HISTENTTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "'"
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    paramvalue = cmd.ExecuteScalar
+
+                    If paramvalue > 0 Then
+                        cmd.Dispose()
+                        fetchAndLoadCustomerData(GlobalVariables.HISTENTTABLE)
+
+                        caseStatusComboBox.Enabled = True
+                        reasonComboBox.Enabled = True
+                        newFatcaClassiComboBox.Enabled = True
+                        newFatcaStatusComboBox.Enabled = True
+                        newCrsClassiComboBox.Enabled = True
+                        newCrsStatusComboBox.Enabled = True
+                        miscAdhocComboBox.Enabled = True
+                        miscRemediatedComboBox.Enabled = True
+                        updateRemarksTextBox.Enabled = True
+                        newTinTextBox.Enabled = True
+                        newGiinTextBox.Enabled = True
+                        saveBtn.Enabled = True
+                    Else
+                        cmd.Dispose()
+                        'disconnectFromDB conn
+                        MsgBox("Case ID not found", vbInformation)
+                        caseidTextBox.Text = ""
+                        caseIDOptionButton.Checked = True
+                        caseIDOptionButton_CheckedChanged()
+                    End If
+                Catch es As Exception
+                    MsgBox("searchCaseDetailBtn_Click " & es.Message)
+                    GoTo Done
+                End Try
+
+            End If
+        End If
+Done:
+        disconnectFromDB()
+        Exit Sub
+        'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.searchCaseDetailBtn_Click", Erl)
+        '        Resume Done
+    End Sub
+
+    Private Sub resetBtn_Click(sender As Object, e As EventArgs) Handles resetBtn.Click
+        On Error GoTo ErrorHandler
+        refreshing_all_fields()
+        caseIDOptionButton.Checked = True
+        caseIDOptionButton_CheckedChanged()
+        viewBtnFlag = False
+
+        caseidTextBox.Focus()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.resetBtn_Click", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub saveBtn_Click(sender As Object, e As EventArgs) Handles saveBtn.Click
+        'On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim paramvalue As Integer
+        Dim Adhoc_action As String
+        Dim scaseid As String
+        Dim i As Integer
+        'sql
+
+        If caseStatusComboBox.Text = "" Then
+            MsgBox("Please select a value for Case Status", vbCritical)
+            caseStatusComboBox.Focus()
+            GoTo Done
+        End If
+
+        If caseStatusComboBox.Text = "Escalated" Or caseStatusComboBox.Text = "Manual Letter" Or caseStatusComboBox.Text = "On-Hold" Then
+            If reasonComboBox.Text = "" Or reasonComboBox.Text = "0" Then
+                MsgBox("Please select a reason", vbCritical)
+                caseStatusComboBox.Focus()
+                GoTo Done
+            End If
+        Else
+            reasonComboBox.Text = ""
+        End If
+
+        If newFatcaClassiComboBox.Text <> "" And newFatcaStatusComboBox.Text = "" Then
+            MsgBox("Please select a value for Fatca Status", vbCritical)
+            newFatcaStatusComboBox.Focus()
+            GoTo Done
+        End If
+
+        If newFatcaStatusComboBox.Text <> "" And newFatcaClassiComboBox.Text = "" Then
+            MsgBox("Please select a value for Fatca Classification", vbCritical)
+            newFatcaClassiComboBox.Focus()
+            GoTo Done
+        End If
+
+        If newCrsClassiComboBox.Text <> "" And newCrsStatusComboBox.Text = "" Then
+            MsgBox("Please select a value for CRS Status", vbCritical)
+            newCrsStatusComboBox.Focus()
+            GoTo Done
+        End If
+
+        If newCrsStatusComboBox.Text <> "" And newCrsClassiComboBox.Text = "" Then
+            MsgBox("Please select a value for CRS Classification", vbCritical)
+            newCrsClassiComboBox.Focus()
+            GoTo Done
+        End If
+
+
+        If (newFatcaClassiComboBox.Text = "SPECIFIED US PERSON") And (newFatcaStatusComboBox.Text = "VERIFIED") And (newTinTextBox.Text = "") Then
+            MsgBox("Please Enter the TIN number as mentioned in form", vbCritical)
+            newTinTextBox.Focus()
+            GoTo Done
+        End If
+
+        If newFatcaStatusComboBox.Text = "VERIFIED" And newCrsStatusComboBox.Text = "VERIFIED" And caseStatusComboBox.Text <> "Resolved" Then
+            MsgBox("Please select case status as resolved ", vbCritical)
+            caseStatusComboBox.Focus()
+            GoTo Done
+        End If
+
+        If (newFatcaClassiComboBox.Text = "US PERSON") And (newFatcaStatusComboBox.Text = "VERIFIED") And (newTinTextBox.Text = "") Then
+            MsgBox("Please Enter the TIN number as mentioned in form", vbCritical)
+            newTinTextBox.Focus()
+            GoTo Done
+        End If
+
+        If miscRemediatedComboBox.Text = "" Then
+            miscRemediatedComboBox.Text = "No"
+        End If
+
+
+        'Saving details for individual
+        connectToDB(GlobalVariables.DBPATH)
+
+        If GlobalVariables.CONN.State = 0 Then
+            MsgBox("Not connected to DB!!", vbInformation)
+            GoTo Done
+        End If
+        Try
+            updateRemarksTextBox.Text = Replace(updateRemarksTextBox.Text, "'", "''")
+            newTinTextBox.Text = Replace(newTinTextBox.Text, "'", "''")
+            newGiinTextBox.Text = Replace(newGiinTextBox.Text, "'", "''")
+
+            If InStr(1, cusTypeTextBox.Text, "Individual", vbTextCompare) Then
+                'ISAACIND
+                ssqlqry = "Update " & GlobalVariables.HISTINDTABLE & " Set "
+                ssqlqry = ssqlqry & " User_Id = '" & GlobalVariables.USERFULLNAME & "' ,"
+
+            ElseIf InStr(1, cusTypeTextBox.Text, "Entity", vbTextCompare) Then
+                ssqlqry = "Update " & GlobalVariables.HISTENTTABLE & " Set "
+                ssqlqry = ssqlqry & " User_Id = '" & GlobalVariables.USERFULLNAME & "' ,"
+            End If
+
+            If newFatcaClassiComboBox.Text <> "" Then
+                ssqlqry = ssqlqry & "FATCA_Classification = '" & newFatcaClassiComboBox.Text & "', "
+            End If
+            If newFatcaStatusComboBox.Text <> "" Then
+                ssqlqry = ssqlqry & "FATCA_Classification_Status = '" & newFatcaStatusComboBox.Text & "', "
+            End If
+            If newCrsClassiComboBox.Text <> "" Then
+                ssqlqry = ssqlqry & "CRS_Classification = '" & newCrsClassiComboBox.Text & "', "
+            End If
+            If newCrsStatusComboBox.Text <> "" Then
+                ssqlqry = ssqlqry & "CRS_Classification_Status = '" & newCrsStatusComboBox.Text & "', "
+            End If
+            If cusResCheckBox.Checked = True Then
+                ssqlqry = ssqlqry & "Cust_Resp = 'yes', "
+            End If
+            ssqlqry = ssqlqry & " Date_Class_Upd = '" & Date.Today & "' , User_Id_Class ='" & GlobalVariables.USERFULLNAME & "' " &
+                    ",  Case_Status = '" & caseStatusComboBox.Text & "' , Remediate = '" & miscRemediatedComboBox.Text & "'" &
+                    ", Date_worked_on = '" & Date.Today & "', TIN = '" & newTinTextBox.Text & "' " &
+                    ", GIIN = '" & newGiinTextBox.Text & "', Remarks = '" & updateRemarksTextBox.Text & "'" &
+                    "where " & GlobalVariables.HIST_CASE_ID & " = '" & CaseId & "'"
+
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            cmd.ExecuteNonQuery()
+
+            cmd.Dispose()
+            If caseStatusComboBox.Text = "Escalated" Or caseStatusComboBox.Text = "Manual Letter" Or caseStatusComboBox.Text = "On-Hold" Then
+                If reasonComboBox.Text <> "" Then
+                    ssqlqry = "Delete from " & GlobalVariables.CASESTATUSTABLE & " where Case_ID ='" & CaseId & "'"
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    cmd.ExecuteNonQuery()
+                    cmd.Dispose()
+                    For i = 0 To Reasons.AssignedReasonsListBox.Items.Count - 1
+                        ssqlqry = "Insert into " & GlobalVariables.CASESTATUSTABLE & " values ('" & CaseId & "' , '" & Reasons.AssignedReasonsListBox.Items(i).ToString & "')"
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        cmd.ExecuteNonQuery()
+                        cmd.Dispose()
+                    Next
+                End If
+            Else
+                ssqlqry = "Delete from " & GlobalVariables.CASESTATUSTABLE & " where Case_ID ='" & CaseId & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                cmd.ExecuteNonQuery()
+                cmd.Dispose()
+            End If
+            ' Updating Adhoc table for individual
+
+            miscAdhocComboBox.Text = Trim(miscAdhocComboBox.Text)
+            If miscAdhocComboBox.Text = "" Then
+                Adhoc_action = "No"
+            Else
+                ssqlqry = "SELECT count(*) FROM Adhoc_Register_Data where ARD_S_ID_FROM_NZ_POST = '" & CaseId & "' And ARD_ADHOC_ID = '" & miscAdhocComboBox.Text & "' "
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar
+                If paramvalue > 0 Then
+                    MsgBox("Case already worked under this Adhoc id, it will be updated", vbInformation)
+                    ssqlqry = "Update Adhoc_Register_Data set  ARD_CUST_ID = '" & cusidTextBox.Text & "', ARD_Date_WORKED_ON = '" & Date.Today & "', ARD_User_id = '" & GlobalVariables.USERFULLNAME & "' where ARD_ADHOC_ID = '" & miscAdhocComboBox.Text & "' and ARD_S_ID_FROM_NZ_POST = '" & CaseId & "';"
+                Else
+                    ssqlqry = "Insert into Adhoc_Register_Data values('" & miscAdhocComboBox.Text & "', '" & CaseId & "', '" & cusidTextBox.Text & "', '" & Date.Today & "', '" & GlobalVariables.USERFULLNAME & "' );"
+                End If
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                cmd.ExecuteNonQuery()
+                cmd.Dispose()
+            End If
+            For icnt = 0 To (Allocated_Cases.allocatedCasesListBox.Items.Count - 1)
+                If Allocated_Cases.allocatedCasesListBox.Items(icnt).SubItems(1).Text = CaseId Then
+                    ssqlqry = "Update Work_Allocation set Status = 'Completed', Completed_Date_and_Time='" & Now & "' where Case_ID='" & CaseId & "'"
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    cmd.ExecuteNonQuery()
+                    cmd.Dispose()
+                End If
+            Next
+        Catch es As Exception
+            MsgBox("SaveBtn_Click " & es.Message)
+            GoTo Done
+        End Try
+        viewBtnFlag = False
+        Reasons.UnassignedReasonsListbox.Items.Clear()
+        Reasons.AssignedReasonsListBox.Items.Clear()
+        MsgBox("Case Updated", vbInformation)
+
+        scaseid = CaseId
+        caseIDOptionButton.Checked = True
+        caseIDOptionButton_CheckedChanged()
+        caseidTextBox.Text = scaseid
+        saveButtonFlag = True
+        searchCaseDetailBtn_Click()
+
+        ''cmd.Dispose()
+        'disconnectFromDB()
+        'TabControl1.SelectedIndex = 0
+Done:
+        disconnectFromDB()
+        Exit Sub
+        'ErrorHandler:
+
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.SaveBtn_Click", Erl)
+        '        Resume Done
+    End Sub
+
+    Private Sub caseStatusComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles caseStatusComboBox.SelectedIndexChanged
+        On Error GoTo ErrorHandler
+        If caseStatusComboBox.Text = "Escalated" Or caseStatusComboBox.Text = "Manual Letter" Or caseStatusComboBox.Text = "On-Hold" Then
+            reasonComboBox.Visible = True
+            reasonUpdLabel.Visible = True
+            ViewReasonsBtn.Visible = True
+            Reasons.ShowDialog()
+        Else
+            reasonComboBox.Visible = False
+            reasonUpdLabel.Visible = False
+            ViewReasonsBtn.Visible = False
+        End If
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.caseStatusComboBox_Click", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub newCaseSaveBtn_Click(sender As Object, e As EventArgs) Handles newCaseSaveBtn.Click
+        'On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim cmd1 As OleDbCommand
+        Dim linkedCaseCollection As New ArrayList
+        Dim i, j As Integer
+        Dim query As String
+        Dim sColumnList As String
+        Dim paramvalue As Integer
+        Dim oledbReader As OleDbDataReader
+
+        CustnameInput.Text = Replace(CustnameInput.Text, "'", "''")
+        ForeignIndiciaInput.Text = Replace(ForeignIndiciaInput.Text, "'", "''")
+        ' Set rs = CreateObject("ADODB.Recordset")
+
+        connectToDB(GlobalVariables.DBPATH)
+
+        If GlobalVariables.CONN.State = 0 Then
+            MsgBox("Not connected to DB!!!")
+            GoTo Done
+        End If
+
+        SIDInput.Text = Trim(SIDInput.Text)
+        custTypeComboBox.Text = Trim(custTypeComboBox.Text)
+        CustIdInput.Text = Trim(CustIdInput.Text)
+        CaseReasonInput.Text = Trim(CaseReasonInput.Text)
+        CustnameInput.Text = Trim(CustnameInput.Text)
+        ForeignIndiciaInput.Text = Trim(ForeignIndiciaInput.Text)
+        NCEmailTextBox.Text = Trim(NCEmailTextBox.Text)
+        KYCIDInput.Text = Trim(KYCIDInput.Text)
+
+        If SIDInput.Text = "" Or custTypeComboBox.Text = "" Or CustIdInput.Text = "" Or CaseReasonInput.Text = "" Or CustnameInput.Text = "" Or
+        ForeignIndiciaInput.Text = "" Or IngestiondateInput.Text = "" Or CustomerSetComboBox.Text = "" Then
+            MsgBox("Please fill in the mandatory fields before saving the details", vbInformation)
+            GoTo Done
+        End If
+        If CDate(IngestiondateInput.Text) > Date.Today Then
+            MsgBox("Ingestion date cannot be a future date. Please correct the date and try again.", vbInformation)
+            GoTo Done
+        End If
+        If ReminderletterdateInput.Text <> "" Then
+            If CDate(ReminderletterdateInput.Value) > Date.Today Then
+                MsgBox("Reminder Letter date cannot be a future date. Please correct the date and try again.", vbInformation)
+                GoTo Done
+            End If
+            If CDate(ReminderletterdateInput.Value) < CDate(IngestiondateInput.Value) Then
+                MsgBox("Ingestion date cannot be greater than reminder letter date. Please correct the date and try again.", vbInformation)
+                GoTo Done
+            End If
+        End If
+        If (Strings.Left(UCase(SIDInput.Text), 2) <> "S-") Then
+            MsgBox("The format of the case id does not match the standard format S-", vbInformation)
+            GoTo Done
+        End If
+
+        'BEGIN PRE-CHECKS IF CASE IS EXISTING
+        Try
+            ssqlqry = "Select count(*) from " & GlobalVariables.HISTINDTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & SIDInput.Text & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar()
+            If paramvalue > 0 Then
+                cmd.Dispose()
+                ssqlqry = "Select Cust_Id from " & GlobalVariables.HISTINDTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & SIDInput.Text & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                oledbReader = cmd.ExecuteReader()
+                If oledbReader.HasRows Then
+                    oledbReader.Read()
+                    MsgBox("The case id " & SIDInput.Text & " already present for Customer " & oledbReader(0) & " !", vbInformation)
+                    GoTo Done
+                End If
+                closeRecordSet(cmd, oledbReader)
+            Else
+                cmd.Dispose()
+            End If
+
+            ssqlqry = "Select count(*) from " & GlobalVariables.HISTENTTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & SIDInput.Text & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar()
+            If paramvalue > 0 Then
+                cmd.Dispose()
+                ssqlqry = "Select Cust_Id from " & GlobalVariables.HISTENTTABLE & " where " & GlobalVariables.HIST_CASE_ID & " = '" & SIDInput.Text & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                oledbReader = cmd.ExecuteReader()
+                If oledbReader.HasRows Then
+                    oledbReader.Read()
+                    MsgBox("The case id " & SIDInput.Text & " already present for Customer " & oledbReader(0) & " !", vbInformation)
+                    GoTo Done
+                End If
+                closeRecordSet(cmd, oledbReader)
+            Else
+                cmd.Dispose()
+            End If
+
+
+            'END PRE-CHECKS
+
+
+            If custTypeComboBox.Text = "GTC Individual" Then
+                'Set rs = CreateObject("ADODB.Recordset")
+                ssqlqry = "SELECT count(*) from " & GlobalVariables.HISTENTTABLE & " " &
+                        "where Cust_Id ='" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar
+                If paramvalue > 0 Then
+                    MsgBox("The cust id " & newCaseCustIdComboBox.Text & CustIdInput.Text & " already present in Entity table", vbInformation)
+                    GoTo Done
+                End If
+                cmd.Dispose()
+                sColumnList = "(Country,RequestSource_ID,Type,RequestType,WorkType,Report_Title,Name,Cust_Id,Other_Reference_ID,Source,Business_Unit,Associated_Parties,Self_Certification," &
+                        "Case_Reason , Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type," &
+                        "FATCA_Classification , FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, Date_Class_Upd, User_Id_Class, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation," &
+                        "Envelope_Salutation , Customer_Name, Customer_Surname, Customer_Date_Of_Birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description," &
+                        "Segment , Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, " & GlobalVariables.HIST_CASE_ID & ", Remarks, Cust_Resp," &
+                        "FATCA_Classification_Curr , FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks," &
+                        "Case_Status , Date_worked_on, User_Id, Esc_Reason, Remediate, Reporting_year, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID )"
+
+                ssqlqry = "Insert into " & GlobalVariables.HISTINDTABLE & " " & sColumnList & " values (" &
+                  IIf(GlobalVariables.COUNTRY = "New Zealand", "'NZ'", "'AU'") & " ," &
+                  IIf(GlobalVariables.COUNTRY = "New Zealand", "'ANZSWXMLGTIRGTCIndividualNZ'", "'ANZSWXMLGTIRGTCIndividualAU'") & " , 'GTC Individual', 'Manual DB Case', '" &
+                    CustomerSetComboBox.Text & "', '" & CustomerSetComboBox.Text & "', '" & CustnameInput.Text & "', " &
+                  "'" & newCaseCustIdComboBox.Text & CustIdInput.Text & "', '', '" & newCaseCustIdComboBox.Text & "', " &
+                  "'Manual DB Case', '', '', '" & CaseReasonInput.Text & "', '" & ForeignIndiciaInput.Text & "', " &
+                  "'', '', '', '', '', '', '', '', '', NULL ,'" & AgentUserID.Text & "', '', '', '', '', '', " &
+                  "'" & CustnameInput.Text & "', '', '', '', '', '', '', '', '', '', " &
+                  "'Manual DB Case', 'Manual DB Case', '', '', '', '', '', '', '', " &
+                  "#" & Format(IngestiondateInput.Value, "dd-MMM-yyyy") & "#, '" & SIDInput.Text & "', " &
+                  "'', '', '', '', '', '', '', '', '', NULL, '', '', '', NULL, '" & AgentUserID.Text & "', " &
+                  "'', '', '' ,#" & Format(ReminderletterdateInput.Value, "dd-MMM-yyyy") & "# ,NULL, NULL, NULL, NULL, '" & KYCIDInput.Text & "')"
+
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                cmd.ExecuteNonQuery()
+                cmd.Dispose()
+            End If
+
+
+            If custTypeComboBox.Text = "GTC Entity" Then
+                ssqlqry = "SELECT count(*) from " & GlobalVariables.HISTINDTABLE & " " &
+                        "where Cust_Id ='" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                paramvalue = cmd.ExecuteScalar()
+                If paramvalue > 0 Then
+                    MsgBox("The cust id " & newCaseCustIdComboBox.Text & CustIdInput.Text & " already present in Individual table", vbInformation)
+                    GoTo Done
+                End If
+                cmd.Dispose()
+
+                sColumnList = "(Country,RequestSource_ID,Type,RequestType,WorkType,Report_Title,Name,Cust_Id,Other_Reference_ID,Customer_Source_System,ANZSIC_Code,Place_of_Effective_Management,Country_of_Establishment,Customer_Type,Customer_Sub_Type,CRS_Entity_Type,Business_Unit,Associated_Parties,Self_Certification," &
+                        "Case_Reason , Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type," &
+                        "FATCA_Classification , FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, Date_Class_Upd, User_Id_Class, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation," &
+                        "Envelope_Salutation , Customer_Name, Customer_Surname, Customer_Date_Of_Birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description," &
+                        "Segment , Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, " & GlobalVariables.HIST_CASE_ID & ", Remarks, Cust_Resp," &
+                        "FATCA_Classification_Curr , FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks," &
+                        "Case_Status , Date_worked_on, User_Id, Esc_Reason, Remediate, Reporting_year , Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID )"
+
+
+                ssqlqry = "Insert into " & GlobalVariables.HISTENTTABLE & " " & sColumnList & " values (" &
+                IIf(GlobalVariables.COUNTRY = "New Zealand", "'NZ'", "'AU'") & " , " &
+                IIf(GlobalVariables.COUNTRY = "New Zealand", "'ANZSWXMLGTIRGTCEntityNZ'", "'ANZSWXMLGTIRGTCEntityAU'") & ", 'GTC Entity', 'Manual DB Case', '" &
+                   CustomerSetComboBox.Text & "','" & CustomerSetComboBox.Text & "', '" & CustnameInput.Text & "', " &
+                  "'" & newCaseCustIdComboBox.Text & CustIdInput.Text & "', '', '" & newCaseCustIdComboBox.Text & "', " &
+                   "'', '', '', '', '', '', " &
+                  "'Manual DB Case', '', '', '" & CaseReasonInput.Text & "', '" & ForeignIndiciaInput.Text & "', " &
+                  "'', '', '', '', '', '', '', '', '', NULL ,'" & AgentUserID.Text & "', '', '', '', '', '', " &
+                  "'" & CustnameInput.Text & "', '', '', '', '', '', '', '', '', '', " &
+                  "'Manual DB Case', 'Manual DB Case', '', '', '', '', '', '', '', " &
+                  "#" & Format(IngestiondateInput.Value, "dd-MMM-yyyy") & "#, '" & SIDInput.Text & "', " &
+                  "'', '', '', '', '', '', '', '', '', NULL, '', '', '', NULL, '" & AgentUserID.Text & "', " &
+                  "'', '', '',#" & Format(ReminderletterdateInput.Value, "dd-MMM-yyyy") & "#, NULL, NULL, NULL, NULL, '" & KYCIDInput.Text & "')"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+
+                cmd.ExecuteNonQuery()
+                cmd.Dispose()
+            End If
+
+
+            ' linked cases
+            If custTypeComboBox.Text = "GTC Individual" Then
+                ssqlqry = "Select count(*) from " & GlobalVariables.HISTINDTABLE & " where Cust_Id = '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+
+                query = "Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTINDTABLE & " where Cust_Id = '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+            Else custTypeComboBox.Text = "GTC Entity"
+                ssqlqry = "Select count(*) from " & GlobalVariables.HISTENTTABLE & " where Cust_Id = '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+
+                query = "Select " & GlobalVariables.HIST_CASE_ID & " from " & GlobalVariables.HISTENTTABLE & " where Cust_Id = '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+            End If
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar()
+            If paramvalue > 1 Then
+                cmd.Dispose()
+                cmd = New OleDbCommand(query, GlobalVariables.CONN)
+                oledbReader = cmd.ExecuteReader()
+                If oledbReader.HasRows Then
+                    While oledbReader.Read
+
+                        ssqlqry = "Select count(*) from " & GlobalVariables.LINKEDCASESTABLE & " where case_id = '" & oledbReader(0) & "'"
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        paramvalue = cmd.ExecuteScalar
+                        If paramvalue = 0 Then
+                            cmd.Dispose()
+                            If custTypeComboBox.Text = "GTC Individual" Then
+                                ssqlqry = "Insert into " & GlobalVariables.LINKEDCASESTABLE & " values( '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "' , '" & oledbReader(0) & "' , 'Individual' )"
+                            ElseIf custTypeComboBox.Text = "GTC Entity" Then
+                                ssqlqry = "Insert into " & GlobalVariables.LINKEDCASESTABLE & " values( '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "' , '" & oledbReader(0) & "' , 'Entity' )"
+                            End If
+                            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                            cmd.ExecuteNonQuery()
+                        End If
+                        cmd.Dispose()
+                    End While
+                End If
+                MsgBox("The case id " & SIDInput.Text & " has linked cases", vbInformation)
+            Else
+                cmd.Dispose()
+            End If
+
+            'Inserting into escalation, customer, conversation
+            ssqlqry = "Select case_id from " & GlobalVariables.LINKEDCASESTABLE & " where Cust_Id = " _
+                    & " '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            oledbReader = cmd.ExecuteReader
+            If oledbReader.HasRows Then
+
+                While oledbReader.Read
+                    linkedCaseCollection.Add(oledbReader(0).ToString)
+                End While
+                closeRecordSet(cmd, oledbReader)
+
+                For i = 0 To linkedCaseCollection.Count - 1
+                    ssqlqry = "SELECT count(*)  FROM " & GlobalVariables.ESCALATIONSTABLE & " where Case_Id = " _
+                            & " '" & linkedCaseCollection(i) & "'"
+                    'rst.Open ssqlqry, GlobalVariables.CONN
+                    cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                    paramvalue = cmd.ExecuteScalar
+                    If paramvalue > 0 Then
+                        cmd.Dispose()
+                        ssqlqry = "Select Reason_for_escalation, Agent_Id, Assigned_On, Attempt_1, " &
+                                "attmpt_1_conv_nbr, Attempt_2, attmpt_2_conv_nbr, Attempt_3, attmpt_3_conv_nbr, " &
+                                "Final_outcome, SLA_Date, SBL_SC_Date, customer_id, customer_set From " & GlobalVariables.ESCALATIONSTABLE & " " &
+                                "where Case_Id = '" & linkedCaseCollection(i) & "' "
+                        'rst.Open ssqlqry, GlobalVariables.CONN
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        oledbReader = cmd.ExecuteReader()
+                        oledbReader.Read()
+                        For j = 0 To linkedCaseCollection.Count - 1
+                            ssqlqry = "SELECT count(*)  FROM " & GlobalVariables.ESCALATIONSTABLE & " where Case_Id = " _
+                                    & " '" & linkedCaseCollection(j) & "'"
+                            cmd1 = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                            paramvalue = cmd1.ExecuteScalar
+                            If paramvalue = 0 Then
+                                cmd1.Dispose()
+                                ssqlqry = "Insert into " & GlobalVariables.ESCALATIONSTABLE & " values ('" & linkedCaseCollection(j) & "', "
+                                createQuery(ssqlqry, oledbReader(0).ToString)
+                                createQuery(ssqlqry, oledbReader(1).ToString)
+                                createQuery(ssqlqry, oledbReader(2).ToString)
+                                createQuery(ssqlqry, oledbReader(3).ToString)
+                                createQuery(ssqlqry, oledbReader(4).ToString)
+                                createQuery(ssqlqry, oledbReader(5).ToString)
+                                createQuery(ssqlqry, oledbReader(6).ToString)
+                                createQuery(ssqlqry, oledbReader(7).ToString)
+                                createQuery(ssqlqry, oledbReader(8).ToString)
+                                createQuery(ssqlqry, oledbReader(9).ToString)
+                                createQuery(ssqlqry, oledbReader(10).ToString)
+                                createQuery(ssqlqry, oledbReader(11).ToString)
+                                createQuery(ssqlqry, oledbReader(12).ToString)
+                                If IsDBNull(oledbReader(13)) Or oledbReader(13).ToString = "" Then
+                                    ssqlqry = ssqlqry & "Null "
+                                Else
+                                    ssqlqry = ssqlqry & "'" & oledbReader(13) & "'  "
+                                End If
+                                ssqlqry = ssqlqry & " )"
+                                cmd1 = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                                cmd1.ExecuteNonQuery()
+                                cmd1.Dispose()
+                            Else
+                                cmd1.Dispose()
+                            End If
+                        Next
+                        closeRecordSet(cmd, oledbReader)
+                    End If
+                Next
+            End If
+            closeRecordSet(cmd, oledbReader)
+
+            ssqlqry = "SELECT count(*)  FROM " & GlobalVariables.CONVERSATIONTABLE & " where CC_Conv_Cust_Id = " &
+            " '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "' "
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar
+            'rs.Open ssqlqry, GlobalVariables.CONN
+            If paramvalue = 0 Then
+                cmd.Dispose()
+                ssqlqry = "Insert into " & GlobalVariables.CONVERSATIONTABLE & " (CC_Conv_Case_Id, CC_Conv_Cust_Id, CC_Conv_Nbr) values (" &
+                  "'" & SIDInput.Text & "', '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "', 0)"
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                cmd.ExecuteNonQuery()
+            End If
+            cmd.Dispose()
+
+            'customer
+            ssqlqry = "SELECT count(*)  FROM " & GlobalVariables.CUSTOMERTABLE & " where CC_Cust_Id = " _
+                        & " '" & newCaseCustIdComboBox.Text & CustIdInput.Text & "'"
+            cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            paramvalue = cmd.ExecuteScalar
+            If paramvalue = 0 Then
+                cmd.Dispose()
+                If ReminderletterdateInput.Text = "" Then
+                    ssqlqry = "Insert into " & GlobalVariables.CUSTOMERTABLE & " (CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Rem_Letter_Sent, CC_Cust_Email, cc_cust_ini_letter_sent) values (" &
+                      "'" & newCaseCustIdComboBox.Text & CustIdInput.Text & "', '" & CustnameInput.Text & "', '" & custTypeComboBox.Text & "', '" & KYCIDInput.Text & "', NULL,'" & NCEmailTextBox.Text & "','" & IngestiondateInput.Text & "')"
+                Else
+                    ssqlqry = "Insert into " & GlobalVariables.CUSTOMERTABLE & " (CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Rem_Letter_Sent, CC_Cust_Email, cc_cust_ini_letter_sent) values (" &
+                      "'" & newCaseCustIdComboBox.Text & CustIdInput.Text & "', '" & CustnameInput.Text & "', '" & custTypeComboBox.Text & "', '" & KYCIDInput.Text & "', '" & ReminderletterdateInput.Text & "','" & NCEmailTextBox.Text & "','" & IngestiondateInput.Text & "')"
+                End If
+
+                cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                cmd.ExecuteNonQuery()
+            End If
+            cmd.Dispose()
+            disconnectFromDB()
+        Catch es As Exception
+            MsgBox("newCaseSaveBtn_Click " & es.Message)
+            GoTo Done
+        End Try
+        MsgBox("Case added.", vbInformation)
+Done:
+        disconnectFromDB()
+        Exit Sub
+        'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.c", Erl)
+        '        'Resume Done
+    End Sub
+
+    Private Sub ViewReasonsBtn_Click(sender As Object, e As EventArgs) Handles ViewReasonsBtn.Click
+        On Error GoTo ErrorHandler
+        viewBtnFlag = True
+        Reasons.ShowDialog()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.caseStatusComboBox_Click", Erl)
+        Resume Done
+    End Sub
+
+    Private Sub allocatedCasesBtn_Click(sender As Object, e As EventArgs) Handles allocatedCasesBtn.Click
+        On Error GoTo ErrorHandler
+
+        Allocated_Cases.ShowDialog()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "Case_Management.caseStatusComboBox_Click", Erl)
+        Resume Done
+    End Sub
+
+    Public Sub caseidTextBox_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles caseidTextBox.KeyDown
+        'On Error GoTo ErrorHandler
+        Try
+            If e.KeyCode = Keys.Enter Then
+                searchCaseDetailBtn_Click()
+            End If
+        Catch ex As Exception
+            MsgBox("Please click reset and then search for case", vbInformation)
+        End Try
+Done:
+        Exit Sub
+'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "Case_Management.caseidTextBox_KeyDown", Erl)
+        '        Resume Done
+    End Sub
+    Public Sub cusidTextBox_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles cusidTextBox.KeyDown
+
+        Try
+            If e.KeyCode = Keys.Enter Then
+                searchCaseDetailBtn_Click()
+            End If
+        Catch ex As Exception
+            MsgBox("Please click reset and then search for case", vbInformation)
+        End Try
+Done:
+        Exit Sub
+    End Sub
+    Private Sub caseDataLinkedCasesListBox_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles caseDataLinkedCasesListBox.KeyDown
+
+        If e.Control AndAlso e.KeyCode = Keys.C Then
+            Dim copy_buffer As New System.Text.StringBuilder
+            For Each item As Object In caseDataLinkedCasesListBox.SelectedItems
+                copy_buffer.AppendLine(item.ToString)
+            Next
+            If copy_buffer.Length > 0 Then
+                Clipboard.SetText(copy_buffer.ToString)
+            End If
+        End If
+    End Sub
+End Class
+Public Class GlobalVariables
+    Public Shared DBPATHAU As String
+    Public Shared DBPATHNZ As String
+    Public Shared DBPATH As String
+    Public Shared CONN As OleDbConnection
+    Public Shared USERLANID As String
+    Public Shared USERFULLNAME As String
+    Public Shared AlreadyUsed As Boolean
+    Public Shared LINE_NO_TEXT As String
+    Public Shared HISTINDTABLE As String
+    Public Shared HISTENTTABLE As String
+    Public Shared LINKEDCASESTABLE As String
+    Public Shared ESCALATIONSTABLE As String
+    Public Shared CUSTOMERTABLE As String
+    Public Shared CONVERSATIONTABLE As String
+    Public Shared CASESTATUSTABLE As String
+    Public Shared HIST_CASE_ID As String
+
+    Public Shared COUNTRY As String
+    Public Shared BOTHCOUNTRIES As Boolean
+    Public Shared PROGVER As String
+    Public Shared LAST_ADHOC_ID_FLAG As Boolean
+    Public Shared LAST_ADHOC_USER_FLAG As Boolean
+    Public Shared ADHOC_ID_FLAG As Boolean
+    Public Shared FOUNDAU As Boolean
+    Public Shared FOUNDNZ As Boolean
+
+End Class
