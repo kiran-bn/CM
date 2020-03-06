@@ -1,0 +1,170 @@
+Imports System.Data.OleDb
+Imports System.IO
+
+Public Class LinkedCases
+    Inherits System.Windows.Forms.Form
+    Dim tableflag As String
+    Public myForm As NZ_Case_Management
+    Private Sub LinkedCases_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        On Error GoTo ErrorHandler
+        linkedCasesListBox.Clear()
+        customersListBox.Clear()
+
+        linkedCasesListBox.Columns.Add(text:="Case ID", width:=80)
+        linkedCasesListBox.Columns.Add(text:="Case Reason", width:=80)
+        linkedCasesListBox.Columns.Add(text:="Foreign Indicia", width:=90)
+
+        customersListBox.Columns.Add(text:="Customer ID", width:=140)
+        customersListBox.Columns.Add(text:="Type", width:=100)
+        populateCustomerListbox()
+Done:
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "LinkedCases.UserForm_Initialize", Erl)
+        Resume Done
+    End Sub
+    Sub populateCustomerListbox()
+        On Error GoTo ErrorHandler
+        Dim cmd As OleDbCommand
+        Dim oledbreader As OleDbDataReader
+        Dim ssqlqry As String
+        Dim counter As Integer
+        counter = 0
+
+        If NZ_Case_Management.custIdComboBox.Text = "" Then
+            ssqlqry = "Select Cust_Id, Type from (select Cust_id, Type from " & GlobalVariables.HISTENTTABLE & " union select cust_id, Type from " & GlobalVariables.HISTINDTABLE & ") hist where" &
+            " hist.Cust_Id like '%" & NZ_Case_Management.cusidTextBox.Text & "%'"
+        Else
+            ssqlqry = "Select Cust_Id, Type from (select Cust_id, Type from " & GlobalVariables.HISTENTTABLE & " union select cust_id, Type from " & GlobalVariables.HISTINDTABLE & ") hist where" &
+                " hist.Cust_Id = '" & NZ_Case_Management.custIdComboBox.Text & NZ_Case_Management.cusidTextBox.Text & "'"
+        End If
+        'Try
+        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+            oledbreader = cmd.ExecuteReader()
+            'Catch e As Exception
+            'MsgBox(e)
+            'End Try
+            If oledbreader.HasRows Then
+                While oledbreader.Read
+                    Dim lstItems As ListViewItem = customersListBox.Items.Add(oledbreader(0))
+                    If oledbreader.IsDBNull(1) Then
+                        lstItems.SubItems.Add("")
+                    Else
+                        lstItems.SubItems.Add(oledbreader(1))
+                    End If
+                End While
+            End If
+Done:
+        closeRecordSet(cmd, oledbreader)
+        Exit Sub
+ErrorHandler:
+        DisplayError(Err.Source, Err.Description, "LinkedCases.populateCustomerListbox", Erl)
+        'Resume Done
+    End Sub
+
+    Private Sub searchCaseFromListBtn_Click(sender As Object, e As EventArgs) Handles searchCaseFromListBtn.Click
+        ' On Error GoTo ErrorHandler
+        Dim iCnt As Integer
+        Try
+            For iCnt = 0 To (linkedCasesListBox.Items.Count - 1)
+                If linkedCasesListBox.FocusedItem.Index = iCnt Then
+                    NZ_Case_Management.CaseId = linkedCasesListBox.Items(iCnt).SubItems(0).Text
+                    If tableflag = "IND" Then
+                        NZ_Case_Management.fetchAndLoadCustomerData(GlobalVariables.HISTINDTABLE)
+                    ElseIf tableflag = "ENT" Then
+                        NZ_Case_Management.fetchAndLoadCustomerData(GlobalVariables.HISTENTTABLE)
+                    End If
+                End If
+            Next iCnt
+        Catch es As Exception
+            MsgBox("Please select a case", vbInformation)
+            GoTo Done
+        End Try
+        Me.Dispose()
+
+        If myform Is Nothing Then
+            myform = New NZ_Case_Management
+            myForm.LinkedCasesForm = Me
+        End If
+        NZ_Case_Management.Show()
+Done:
+        Exit Sub
+'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "LinkedCases.searchCaseFromListBtn_Click", Erl)
+        '        Resume Done
+    End Sub
+
+    Private Sub customersListBox_Click(sender As Object, e As EventArgs) Handles customersListBox.Click
+        'On Error GoTo ErrorHandler
+        Dim iCnt As Integer
+        Dim cmd As OleDbCommand
+        Dim ssqlqry As String
+        Dim oledbreader As OleDbDataReader
+
+        linkedCasesListBox.Items.Clear()
+        Try
+            'connectToDB(GlobalVariables.DBPATH)
+
+            For iCnt = 0 To (customersListBox.Items.Count - 1)
+                If customersListBox.FocusedItem.Index = iCnt Then
+                    If InStr(1, customersListBox.Items(iCnt).SubItems(1).Text, "Individual", vbTextCompare) > 0 Then
+                        'NZ_Case_Management.CaseId = customersListBox.Items("Customer ID").ToString
+                        ssqlqry = "Select " & GlobalVariables.HIST_CASE_ID & ", Case_Reason, Foreign_Indicia " &
+                    "from " & GlobalVariables.HISTINDTABLE & " where Cust_Id = '" & customersListBox.Items(iCnt).SubItems(0).Text & "'"
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        oledbreader = cmd.ExecuteReader
+                        If oledbreader.HasRows Then
+                            While oledbreader.Read
+                                tableflag = "IND"
+                                Dim lstItems As ListViewItem = linkedCasesListBox.Items.Add(oledbreader(0))
+                                If oledbreader.IsDBNull(1) Then
+                                    lstItems.SubItems.Add("")
+                                Else
+                                    lstItems.SubItems.Add(oledbreader(1))
+                                End If
+                                If oledbreader.IsDBNull(2) Then
+                                    lstItems.SubItems.Add("")
+                                Else
+                                    lstItems.SubItems.Add(oledbreader(2))
+                                End If
+                            End While
+                        End If
+                        closeRecordSet(cmd, oledbreader)
+                    ElseIf InStr(1, customersListBox.Items(iCnt).SubItems(1).Text, "Entity", vbTextCompare) > 0 Then
+                        ssqlqry = "Select " & GlobalVariables.HIST_CASE_ID & ", Case_Reason, Foreign_Indicia " &
+                                    " from " & GlobalVariables.HISTENTTABLE & " where Cust_Id = '" & customersListBox.Items(iCnt).SubItems(0).Text & "'"
+                        cmd = New OleDbCommand(ssqlqry, GlobalVariables.CONN)
+                        oledbreader = cmd.ExecuteReader
+                        If oledbreader.HasRows Then
+                            While oledbreader.Read
+                                tableflag = "ENT"
+                                Dim lstItems As ListViewItem = linkedCasesListBox.Items.Add(oledbreader(0))
+                                If oledbreader.IsDBNull(1) Then
+                                    lstItems.SubItems.Add("")
+                                Else
+                                    lstItems.SubItems.Add(oledbreader(1))
+                                End If
+                                If oledbreader.IsDBNull(2) Then
+                                    lstItems.SubItems.Add("")
+                                Else
+                                    lstItems.SubItems.Add(oledbreader(2))
+                                End If
+                            End While
+                        End If
+                        closeRecordSet(cmd, oledbreader)
+                    End If
+
+                End If
+            Next iCnt
+        Catch es As Exception
+            MsgBox("customersListBox_Click " & es.Message)
+            GoTo Done
+        End Try
+Done:
+        'disconnectFromDB()
+        Exit Sub
+'ErrorHandler:
+        '        DisplayError(Err.Source, Err.Description, "LinkedCases.customersListBox_Click", Erl)
+        '        Resume Done
+    End Sub
+End Class
