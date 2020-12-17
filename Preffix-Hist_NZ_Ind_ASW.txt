@@ -1,0 +1,82 @@
+Sub prefixcustid()
+Dim db As DAO.Database
+Dim rs As DAO.Recordset
+Dim fld1 As String
+Dim fld2 As String
+Dim temp As String
+Dim qrystr As String
+
+Set db = CurrentDb
+
+Set rs = db.OpenRecordset("SELECT S_id_from_NZ_post,Cust_Id  FROM Hist_NZ_Ind_ASW;", dbOpenDynaset)
+
+
+rs.MoveFirst
+ 
+ While Not rs.EOF
+ fld1 = rs.Fields(0)
+ fld2 = rs.Fields(1)
+ temp = rs.Fields(1)
+  
+       If Len(temp) > 19 Then
+              if left(temp,5) = "WSLNZ" then goto skip1
+              if left(temp,5) = "BBDNZ" then goto skip1
+              if left(temp,5) = "ONANZ" then goto skip1
+              if left(temp,5) = "UDCNZ" then goto skip1 
+              if left(temp,5) = "DBLNZ" then goto skip1
+              if left(temp,5) = "SISNZ" then goto skip1
+              temp = "WSLNZ" & temp
+              GoTo skip1
+       ElseIf startsWith(temp, "C") = True Then
+              temp = "BBDNZ" & temp
+              GoTo skip1
+       ElseIf startsWith(temp, "OA") = True Then
+              temp = "ONANZ" & temp
+              GoTo skip1
+       ElseIf startsWith(temp, "DEP") = True Then
+              temp = "UDCNZ" & temp
+              GoTo skip1
+       ElseIf startsWith(temp, "SE") = True Then
+              temp = "DBLNZ" & temp
+              GoTo skip1
+       ElseIf IsNumeric(temp) Then
+              temp = "SISNZ" & PadLeft(temp, 14, "0")
+              GoTo skip1
+       End If
+skip1:
+      If temp = fld2 Then GoTo skip
+      db.Execute ("Update Hist_NZ_Ind_ASW set Cust_Id='" & temp & "' where S_id_from_NZ_post='" & fld1 & "';")
+skip:
+      rs.MoveNext
+  Wend
+
+ Msgbox("Prefixing Complete")
+
+End Sub
+
+Function PadLeft(text As Variant, totalLength As Integer, padCharacter As String) As String
+    On Error GoTo ErrorBlock
+    PadLeft = String(totalLength - Len(CStr(text)), padCharacter) & CStr(text)
+Done:
+    Exit Function
+ErrorBlock:
+    MsgBox (Err.Source & " " & Err.Description & " Module1.PadLeft")
+    Resume Done
+End Function
+
+Function PadRight(text As Variant, totalLength As Integer, padCharacter As String) As String
+    On Error GoTo ErrorBlock
+    PadRight = CStr(text) & String(totalLength - Len(CStr(text)), padCharacter)
+Done:
+    Exit Function
+ErrorBlock:
+    MsgBox (Err.Source & " " & Err.Description & " Module1.Padright")
+    Resume Done
+End Function
+
+
+Public Function startsWith(str As String, prefix As String, Optional toffset As Integer = 0) As Boolean
+    startsWith = Mid(str, toffset + 1, Len(prefix)) = prefix
+End Function
+
+

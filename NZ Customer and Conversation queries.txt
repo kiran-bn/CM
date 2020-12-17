@@ -1,0 +1,31 @@
+1.
+delete * from NZ_CC_Customer;
+
+2.
+INSERT INTO NZ_CC_Customer ( CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Rem_Letter_Sent, CC_Cust_Man_Letter_Sent, CC_Cust_SMS_Sent, 
+CC_Cust_Rest_SMS_Sent, CC_Cust_Email_Sent, CC_Cust_add_User_Id, CC_Cust_Address_1, CC_Cust_Address_2, CC_Cust_Address_3, CC_Cust_Address_4, CC_Cust_Address_City, 
+CC_Cust_Address_Post, CC_Cust_Address_Country, CC_Associated_Party )
+SELECT Cust_Id, Name, Type, KYC_ID, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, User_Id, Address_1, Address_2, Address_3, Address_4, 
+City, Post, Add_Country, Associated_Parties
+FROM Hist_NZ_Ind_ASW;
+
+3.
+INSERT INTO NZ_CC_Customer ( CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Rem_Letter_Sent, CC_Cust_Man_Letter_Sent, CC_Cust_SMS_Sent, 
+CC_Cust_Rest_SMS_Sent, CC_Cust_Email_Sent, CC_Cust_add_User_Id,CC_Cust_Address_1, CC_Cust_Address_2, CC_Cust_Address_3, CC_Cust_Address_4, CC_Cust_Address_City,
+CC_Cust_Address_Post, CC_Cust_Address_Country, CC_Associated_Party )
+SELECT Cust_Id, Name, Type, KYC_ID, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, User_Id, Address_1, Address_2, Address_3, Address_4, 
+City, Post, Add_Country, Associated_Parties
+FROM Hist_NZ_ENTITY_ASW;
+
+4.
+Delete * from NZ_CC_Conversation;
+
+
+5.
+INSERT INTO NZ_CC_Conversation ( CC_Conv_Case_Id, CC_Conv_Cust_Id, CC_Conv_Nbr )
+SELECT S_id_from_NZ_post, Cust_ID, 0 FROM Hist_NZ_Ind_ASW;
+
+
+6.
+INSERT INTO NZ_CC_Conversation(CC_Conv_Case_Id, CC_Conv_Cust_Id, CC_Conv_Nbr)
+Select S_id_from_NZ_post,Cust_ID,0 from Hist_NZ_ENTITY_ASW;

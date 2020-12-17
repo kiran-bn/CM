@@ -1,0 +1,25 @@
+QUERY FOR LINKED CASE ID TABLE:
+1. 
+delete * from nz_linked_cases;
+2. 
+insert into nz_linked_cases 
+select *
+from (
+select he.cust_id, he.s_id_from_nz_post as case_id, 'Entity' as customer_type
+from (
+SELECT cust_id, count(cust_id) as cnt
+from hist_nz_entity_asw
+group by cust_id
+having count(cust_id) > 1) x, hist_nz_entity_asw he
+where x.cust_id = he.cust_id
+order by he.cust_id
+union
+select he.cust_id, he.s_id_from_nz_post as case_id, 'Individual' as customer_type
+from (
+SELECT cust_id, count(cust_id) as cnt
+from hist_nz_ind_asw
+group by cust_id
+having count(cust_id) > 1) x, hist_nz_ind_asw he
+where x.cust_id = he.cust_id
+order by he.cust_id) a
+order by a.customer_type, a.cust_id;

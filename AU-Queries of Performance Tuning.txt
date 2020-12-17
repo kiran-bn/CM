@@ -1,0 +1,279 @@
+1.Copy_Escalated_Cases_qry
+
+"INSERT INTO AU_CC_Escalations1 ( Case_Id, Customer_Id )
+SELECT AU_Linked_Cases1.Case_id, AU_Linked_Cases1.Cust_id
+FROM AU_Linked_Cases1 INNER JOIN AU_CC_Escalations ON AU_Linked_Cases1.cust_id=AU_CC_Escalations.Customer_id;"
+
+2.Copy_Linked_Entity_Cases_qry
+
+"INSERT INTO AU_Linked_Cases1 ( cust_id, case_id, customer_type )
+SELECT VALID_AU_Entity_ASW.Cust_Id, VALID_AU_Entity_ASW.S_id_from_AU_post, VALID_AU_Entity_ASW.Type
+FROM VALID_AU_Entity_ASW
+WHERE VALID_AU_Entity_ASW.Cust_Id in (select VALID_AU_Entity_ASW.Cust_Id from VALID_AU_Entity_ASW inner join Hist_AU_Entity_ASW on VALID_AU_Entity_ASW.Cust_Id=Hist_AU_Entity_ASW.Cust_Id);"
+
+3.Copy_Linked_Ind_Cases_qry
+
+"INSERT INTO AU_Linked_Cases1 ( cust_id, case_id, customer_type )
+SELECT VALID_AU_Ind_ASW.Cust_Id, VALID_AU_Ind_ASW.S_id_from_AU_post, VALID_AU_Ind_ASW.Type
+FROM VALID_AU_Ind_ASW
+WHERE VALID_AU_Ind_ASW.Cust_Id in (select VALID_AU_Ind_ASW.Cust_Id from VALID_AU_Ind_ASW inner join Hist_AU_Ind_ASW on VALID_AU_Ind_ASW.Cust_Id=Hist_AU_Ind_ASW.Cust_Id);"
+
+
+4.Insert_Conversation_Entity_Tbl_qry
+
+"INSERT INTO AU_CC_Conversation ( CC_Conv_Case_Id, CC_Conv_Cust_Id, CC_Conv_Nbr )
+SELECT VALID_AU_Entity_ASW.S_id_from_AU_post, VALID_AU_Entity_ASW.Cust_Id, '0'
+FROM VALID_AU_Entity_ASW
+WHERE VALID_AU_Entity_ASW.Cust_Id NOT in (select AU_CC_Conversation.CC_Conv_Cust_Id from AU_CC_Conversation inner join VALID_AU_Entity_ASW on AU_CC_Conversation.CC_Conv_Cust_Id=VALID_AU_Entity_ASW.Cust_Id;);"
+
+5.Insert_Conversation_Ind_Tbl_qry
+
+"INSERT INTO AU_CC_Conversation ( CC_Conv_Case_Id, CC_Conv_Cust_Id, CC_Conv_Nbr )
+SELECT VALID_AU_Ind_ASW.S_id_from_AU_post, VALID_AU_Ind_ASW.Cust_Id, '0'
+FROM VALID_AU_Ind_ASW
+WHERE VALID_AU_Ind_ASW.Cust_Id NOT in (select AU_CC_Conversation.CC_Conv_Cust_Id from AU_CC_Conversation inner join VALID_AU_Ind_ASW on AU_CC_Conversation.CC_Conv_Cust_Id=VALID_AU_Ind_ASW.Cust_Id;);"
+
+6.Insert_Customer_Entity_Tbl_qry
+
+"INSERT INTO AU_CC_Customer ( CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Address_1, CC_Cust_Address_2, CC_Cust_Address_3, CC_Cust_Address_4, CC_Cust_Address_City, CC_Cust_Address_Post, CC_Cust_Address_Country )
+SELECT VALID_AU_Entity_ASW.Cust_Id, VALID_AU_Entity_ASW.Name, VALID_AU_Entity_ASW.Type, VALID_AU_Entity_ASW.KYC_ID, VALID_AU_Entity_ASW.Address_1, VALID_AU_Entity_ASW.Address_2, VALID_AU_Entity_ASW.Address_3, VALID_AU_Entity_ASW.Address_4, VALID_AU_Entity_ASW.City, VALID_AU_Entity_ASW.Post, VALID_AU_Entity_ASW.Add_Country
+FROM VALID_AU_Entity_ASW
+WHERE VALID_AU_Entity_ASW.Cust_Id NOT in (select AU_CC_Customer.CC_Cust_Id from AU_CC_Customer inner join VALID_AU_Entity_ASW on AU_CC_Customer.CC_Cust_Id=VALID_AU_Entity_ASW.Cust_Id;);"
+
+
+7.Insert_Customer_Ind_Tbl_qry
+
+"INSERT INTO AU_CC_Customer ( CC_Cust_Id, CC_Cust_Name, CC_Cust_type, CC_Cust_kyc, CC_Cust_Address_1, CC_Cust_Address_2, CC_Cust_Address_3, CC_Cust_Address_4, CC_Cust_Address_City, CC_Cust_Address_Post, CC_Cust_Address_Country )
+SELECT VALID_AU_Ind_ASW.Cust_Id, VALID_AU_Ind_ASW.Name, VALID_AU_Ind_ASW.Type, VALID_AU_Ind_ASW.KYC_ID, VALID_AU_Ind_ASW.Address_1, VALID_AU_Ind_ASW.Address_2, VALID_AU_Ind_ASW.Address_3, VALID_AU_Ind_ASW.Address_4, VALID_AU_Ind_ASW.City, VALID_AU_Ind_ASW.Post, VALID_AU_Ind_ASW.Add_Country
+FROM VALID_AU_Ind_ASW
+WHERE VALID_AU_Ind_ASW.Cust_Id NOT in (select AU_CC_Customer.CC_Cust_Id from AU_CC_Customer inner join VALID_AU_Ind_ASW on AU_CC_Customer.CC_Cust_Id=VALID_AU_Ind_ASW.Cust_Id;);"
+
+8.Insert_Escalated_Cases_qry
+
+"INSERT INTO AU_CC_Escalations
+SELECT *
+FROM AU_CC_Escalations1;"
+
+9. Insert_Invalid_Entity_Ingestion
+
+"INSERT INTO INVALID_AU_Entity_ASW
+SELECT *
+FROM AU_ENTITY_ASW;"
+
+10.Insert_Invalid_Ind_Ingestion 
+
+"INSERT INTO INVALID_AU_Ind_ASW
+SELECT *
+FROM AU_Ind_ASW;"
+
+
+11.Insert_Linked_Cases_Qry
+
+"INSERT INTO AU_Linked_Cases
+SELECT *
+FROM AU_Linked_Cases1;"
+
+12.Insert_Valid_Entity_Hist_Ingestion
+
+"INSERT INTO Hist_AU_Entity_ASW ( Country, RequestSource_ID, Type, RequestType, WorkType, Report_Title, Name, Cust_Id, Other_Reference_ID, Customer_Source_System, ANZSIC_Code, Place_of_Effective_Management, Country_of_Establishment, Customer_Type, Customer_Sub_Type, CRS_Entity_Type, Business_Unit, Associated_Parties, Self_Certification, Case_Reason, Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type, FATCA_Classification, FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation, Envelope_Salutation, Customer_Name, Customer_Surname, Customer_date_of_birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description, Segment, Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, S_id_from_AU_post, Remarks, Cust_Resp, FATCA_Classification_Curr, FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks, Case_Status, Date_worked_on, User_Id, Esc_Reason, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID, Reporting_year, Remediate, Date_Class_Upd, User_Id_Class )
+SELECT Country, RequestSource_ID, Type, RequestType, WorkType, Report_Title, Name, Cust_Id, Other_Reference_ID, Customer_Source_System, ANZSIC_Code, Place_of_Effective_Management, Country_of_Establishment, Customer_Type, Customer_Sub_Type, CRS_Entity_Type, Business_Unit, Associated_Parties, Self_Certification, Case_Reason, Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type, FATCA_Classification, FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation, Envelope_Salutation, Customer_Name, Customer_Surname, Customer_date_of_birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description, Segment, Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, S_id_from_AU_post, Remarks, Cust_Resp, FATCA_Classification_Curr, FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks, Case_Status, Date_worked_on, User_Id, Esc_Reason, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID, Reporting_year, Remediate, Date_Class_Upd, User_Id_Class
+FROM VALID_AU_Entity_ASW;"
+
+13.Insert_Valid_Entity_Ingestion
+
+"INSERT INTO VALID_AU_Entity_ASW
+SELECT *
+FROM INVALID_AU_Entity_ASW;"
+
+14.Insert_Valid_Ind_Hist_Ingestion
+
+"INSERT INTO Hist_AU_Ind_ASW ( Country, RequestSource_ID, Type, RequestType, WorkType, Report_Title, Name, Cust_Id, Other_Reference_ID, Source, Business_Unit, Associated_Parties, Self_Certification, Case_Reason, Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type, FATCA_Classification, FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation, Envelope_Salutation, Customer_Name, Customer_Surname, Customer_Date_Of_Birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description, Segment, Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, S_id_from_AU_post, Remarks, Cust_Resp, FATCA_Classification_Curr, FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks, Case_Status, Date_worked_on, User_Id, Esc_Reason, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID, Reporting_year, Remediate, Date_Class_Upd, User_Id_Class )
+SELECT Country, RequestSource_ID, Type, RequestType, WorkType, Report_Title, Name, Cust_Id, Other_Reference_ID, Source, Business_Unit, Associated_Parties, Self_Certification, Case_Reason, Foreign_Indicia, Reason_for_Customer_Re_work, RM_Code_at_Source_System_Level, RM_Name_at_Source_System_Level, Intermediary_Managed_Customer, Letter_Type, FATCA_Classification, FATCA_Classification_Status, CRS_Classification, CRS_Classification_Status, QA_Pass_Fail, Reason_for_QA_Failure, Customer_Branch, Formal_Salutation, Envelope_Salutation, Customer_Name, Customer_Surname, Customer_Date_Of_Birth, Address_1, Address_2, Address_3, Address_4, City, Post, Add_Country, Letter_Code, Letter_Description, Segment, Signatory_Name, Signatory_Title, Signatory_Phone_Number, Signatory_Email, Entity_Name, Overseas_Address_Flag, Date_Of_Ingestion, S_id_from_AU_post, Remarks, Cust_Resp, FATCA_Classification_Curr, FATCA_Classification_Status_Curr, CRS_Classification_Curr, CRS_Classification_Status_Curr, TIN, GIIN, QC_User, QC_Date, QC_Pass_Fail, QC_Remarks, Case_Status, Date_worked_on, User_Id, Esc_Reason, Reminder_Letter_dt, Manual_Letter_dt, SMS_dt, Rem_SMS_dt, CC_Email_dt, KYC_ID, Reporting_year, Remediate, Date_Class_Upd, User_Id_Class
+FROM VALID_AU_Ind_ASW;"
+
+15.Insert_Valid_Ind_Ingestion
+
+"INSERT INTO VALID_AU_Ind_ASW
+SELECT *
+FROM INVALID_AU_Ind_ASW;"
+
+16.Add_Column_Line_No_AU_Exceptions
+
+"alter table AU_Exceptions
+add column Line_No Long;"
+
+17.Add_Comments_AU_Exceptions
+
+"alter table AU_Exceptions
+add column Comments String;"
+
+18.Drop_Tbl_Escalated_Cases
+
+"Drop table AU_CC_Escalations1;"
+
+19.Drop_Tbl_Exceptions
+
+"Drop table AU_Exceptions;"
+
+20.Drop_Tbl_Linked_Cases
+
+"Drop table AU_Linked_Cases1;"
+
+21.Drop_Tbl_AU_Line_No
+
+"Drop table AU_Line_No;"
+
+22.Del_Ingested_Entity_Cases_Exceptions
+
+"DELETE *
+FROM AU_Exceptions
+WHERE AU_Exceptions.S_id_from_AU_post in ( select S_id_from_AU_post from VALID_AU_ENTITY_ASW);"
+
+23.Del_Ingested_Ind_Cases_Exceptions
+
+"DELETE *
+FROM AU_Exceptions
+WHERE AU_Exceptions.S_id_from_AU_post in ( select S_id_from_AU_post from VALID_AU_Ind_ASW);"
+
+24.Del_Temp_Escalated_cases_Tbl_qry
+
+"DELETE *
+FROM AU_CC_Escalations1;"
+
+25.Del_Temp_Linked_cases_Tbl_qry
+
+"DELETE *
+FROM AU_Linked_Cases1;"
+
+26.Delete_Duplicate_cases_Entity_qry
+
+"DELETE *
+FROM VALID_AU_Entity_ASW
+WHERE S_id_from_AU_post  in (select Hist_AU_Entity_ASW.S_id_from_AU_post from Hist_AU_Entity_ASW inner join VALID_AU_Entity_ASW on Hist_AU_Entity_ASW.S_id_from_AU_post=VALID_AU_Entity_ASW.S_id_from_AU_post;);"
+
+27.Delete_Duplicate_cases_Ind_qry
+
+"DELETE *
+FROM VALID_AU_Ind_ASW
+WHERE VALID_AU_Ind_ASW.S_id_from_AU_post  in (select Hist_AU_Ind_ASW.S_id_from_AU_post from Hist_AU_Ind_ASW inner join VALID_AU_Ind_ASW on Hist_AU_Ind_ASW.S_id_from_AU_post=VALID_AU_Ind_ASW.S_id_from_AU_post;);"
+
+28.Delete_Existing_Escalated_Cases_qry
+
+"DELETE *
+FROM AU_CC_Escalations1
+WHERE AU_CC_Escalations1.case_id in ( select AU_CC_Escalations.case_id from AU_CC_Escalations inner join AU_CC_Escalations1 on AU_CC_Escalations.case_id=AU_CC_Escalations1.case_id);"
+
+29.Delete_Existing_Linked_Cases_qry
+
+"DELETE *
+FROM AU_Linked_Cases1
+WHERE AU_Linked_Cases1.case_id in ( select AU_Linked_Cases.case_id from AU_Linked_Cases inner join AU_Linked_Cases1 on AU_Linked_Cases.case_id=AU_Linked_Cases1.case_id;);"
+
+30.Truncate_Invalid_Entity_Tbl_Qry
+
+"DELETE *
+FROM INVALID_AU_Entity_ASW;"
+
+31.Truncate_Invalid_Ind_Tbl_Qry
+
+"DELETE *
+FROM INVALID_AU_Ind_ASW;"
+
+32.Truncate_Valid_Entity_Tbl_Qry
+
+"DELETE *
+FROM VALID_AU_Entity_ASW;"
+
+33.Truncate_Valid_Ind_Tbl_Qry
+
+"DELETE *
+FROM VALID_AU_Ind_ASW;"
+
+34.Create_Temp_Escalated_Cases_Tbl_Qry
+
+"SELECT AU_CC_Escalations.* INTO AU_CC_Escalations1
+FROM AU_CC_Escalations;"
+
+35.Create_Temp_Exception_Entity_Table
+
+"SELECT INVALID_AU_ENTITY_ASW.* INTO AU_Exceptions
+FROM INVALID_AU_ENTITY_ASW;"
+
+36.Create_Temp_Exception_Ind_Table
+
+"SELECT INVALID_AU_Ind_ASW.* INTO AU_Exceptions
+FROM INVALID_AU_Ind_ASW;"
+
+37.Create_Temp_Link_Cases_Tbl_Qry
+
+"SELECT AU_Linked_Cases.* INTO AU_Linked_Cases1
+FROM AU_Linked_Cases;"
+
+38.Min_Entity_Line_No
+
+"SELECT Min_Of_ID_Entity_Qry.* INTO AU_Line_No
+FROM Min_Of_ID_Entity_Qry;"
+
+39.Min_Ind_Line_No
+
+"SELECT Min_Of_ID_Ind_Qry.* INTO AU_Line_No
+FROM Min_Of_ID_Ind_Qry;"
+
+40.Min_Of_ID_Entity_Qry
+
+"SELECT INVALID_AU_Entity_ASW.ID, (select min(INVALID_AU_Entity_ASW.ID) from INVALID_AU_Entity_ASW;) AS Min_Of_ID
+FROM INVALID_AU_Entity_ASW;"
+
+41.Min_Of_ID_Ind_Qry
+
+"SELECT INVALID_AU_Ind_ASW.ID, (select min(INVALID_AU_Ind_ASW.ID) from INVALID_AU_Ind_ASW;) AS Min_Of_ID
+FROM INVALID_AU_Ind_ASW;"
+
+42.Blank_Check_AU
+
+"UPDATE AU_Exceptions SET comments = Comments & " , " &  "CustID/CaseID/Reporting_year column is blank"
+WHERE trim(S_id_from_AU_post) is Null or trim(Cust_Id) is Null or trim(Reporting_year) ='' or trim(Name) is Null;"
+
+43.Duplicate_Case_ID_Entity_qry
+
+"UPDATE AU_Exceptions SET Comments = comments & " , " &  "Case ID already present in Database as Entity"
+WHERE S_id_from_AU_post  in (select S_id_from_AU_post from Hist_AU_Entity_ASW);"
+
+44.Duplicate_Case_ID_Ind_qry
+
+"UPDATE AU_Exceptions SET Comments = comments & " , " &  "Case ID already present in Database as Individual"
+WHERE S_id_from_AU_post  in (select S_id_from_AU_post from Hist_AU_Ind_ASW);"
+
+45.Mising_Prefix_CustID
+
+"UPDATE AU_Exceptions SET Comments = comments & " , " & "Missing Cust ID Prefix"
+WHERE Cust_Id  Not Like  'SISAU*'  and Cust_Id  Not Like  'BBDAU*' and Cust_Id  Not Like  'ONAAU*' and Cust_Id  Not Like  'DBLAU*' and Cust_Id  Not Like  'UDCAU*' and Cust_Id  Not Like  'WSLAU*';"
+
+46.Missing_Prefix_Case_Id
+
+"UPDATE AU_Exceptions SET comments = comments & " , " & "Invalid Case Id  format"
+WHERE S_id_from_AU_post  Not Like  'S-*';"
+
+47.Update_AU_CC_Escalations1_qry
+
+"UPDATE AU_CC_Escalations1 INNER JOIN AU_CC_Escalations ON AU_CC_Escalations1.Customer_id=AU_CC_Escalations.Customer_id SET AU_CC_Escalations1.Reason_for_escalation = AU_CC_Escalations.Reason_for_escalation, AU_CC_Escalations1.Agent_Id = AU_CC_Escalations.Agent_Id, AU_CC_Escalations1.Assigned_On = AU_CC_Escalations.Assigned_On, AU_CC_Escalations1.Attempt_1 = AU_CC_Escalations.Attempt_1, AU_CC_Escalations1.attmpt_1_conv_nbr = AU_CC_Escalations.attmpt_1_conv_nbr, AU_CC_Escalations1.Attempt_2 = AU_CC_Escalations.Attempt_2, AU_CC_Escalations1.attmpt_2_conv_nbr = AU_CC_Escalations.attmpt_2_conv_nbr, AU_CC_Escalations1.Attempt_3 = AU_CC_Escalations.Attempt_3, AU_CC_Escalations1.attmpt_3_conv_nbr = AU_CC_Escalations.attmpt_3_conv_nbr, AU_CC_Escalations1.Final_outcome = AU_CC_Escalations.Final_outcome, AU_CC_Escalations1.SLA_Date = AU_CC_Escalations.SLA_Date, AU_CC_Escalations1.SBL_SC_Date = AU_CC_Escalations.SBL_SC_Date, AU_CC_Escalations1.customer_set = AU_CC_Escalations.customer_set;"
+
+48.Update_AU_Line_No
+
+"UPDATE AU_Exceptions INNER JOIN AU_Line_No ON AU_Exceptions.ID=[AU_Line_No].ID SET AU_Exceptions.Comments = 'Line_No' & AU_Exceptions.ID+1-[AU_Line_No].Min_Of_ID;"
+
+49.Vice_Versa_Check_Entity_Ind_Qry
+
+"UPDATE AU_Exceptions SET Comments = Comments & ","  & "Case ID already present in Database as Entity"
+WHERE S_id_from_AU_post  in (select S_id_from_AU_post from Hist_AU_ENTITY_ASW;);"
+
+50.Vice_Versa_Check_Ind_Entity_Qry
+
+"UPDATE AU_Exceptions SET Comments = Comments & ","  & "Case ID already present in Database as Individual"
+WHERE S_id_from_AU_post  in (select S_id_from_AU_post from Hist_AU_Ind_ASW;);"
+
+
+
+
+
+

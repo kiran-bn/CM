@@ -1,0 +1,14 @@
+select * from (
+select H.CUST_ID AS H_CUST_ID, H.REQUESTTYPE ,H.DATE_OF_INGESTION, c.cc_cust_id
+from hist_nz_ind_asw h
+left join nz_cc_customer c
+on h.cust_id = c.cc_cust_id) x
+where x.cc_cust_id is null
+
+
+select * from (
+select H.CUST_ID AS H_CUST_ID, H.REQUESTTYPE ,H.DATE_OF_INGESTION, c.cc_conv_cust_id
+from hist_nz_ind_asw h
+left join nz_cc_conversation c
+on h.cust_id = c.cc_conv_cust_id) x
+where x.cc_conv_cust_id is null
